@@ -23,7 +23,12 @@ class BenchmarkExecutionRepository:
             timed_out=run.timed_out,
         )
         self._session.add(execution)
-        self._session.commit()
+        try:
+            self._session.commit()
+        except Exception:
+            # Leave the session usable for the caller; the error still propagates.
+            self._session.rollback()
+            raise
         self._session.refresh(execution)  # loads id and the database-set created_at
         return execution
 

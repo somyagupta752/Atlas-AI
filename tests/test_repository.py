@@ -1,5 +1,8 @@
 from datetime import UTC, datetime
 
+import pytest
+from sqlalchemy.exc import DataError
+
 from app.benchmark import BenchmarkExecutionResult
 from app.repository import BenchmarkExecutionRepository
 from app.test_runner import TestRunResult
@@ -86,3 +89,44 @@ def test_tests_leave_database_clean(db_session):
     with SessionLocal() as other:
         count = other.execute(text("select count(*) from benchmark_executions")).scalar()
     assert count == 0
+
+
+def test_limit_returns_the_newest_runs(db_session):
+    repo = BenchmarkExecutionRepository(db_session)
+    runs = [repo.save(_result()) for _ in range(3)]
+    for hour, run in enumerate(runs, start=10):
+        run.created_at = datetime(2026, 1, 1, hour, tzinfo=UTC)
+    db_session.commit()
+
+    limited = repo.list_by_case("bug-001-average", limit=2)
+
+    assert [r.id for r in limited] == [runs[2].id, runs[1].id]
+
+
+def test_equal_timestamps_are_ordered_deterministically_by_id(db_session):
+    repo = BenchmarkExecutionRepository(db_session)
+    runs = [repo.save(_result()) for _ in range(5)]
+    same_time = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    for run in runs:
+        run.created_at = same_time
+    db_session.commit()
+
+    first = [r.id for r in repo.list_by_case("bug-001-average")]
+    second = [r.id for r in repo.list_by_case("bug-001-average")]
+
+    assert first == second == sorted(run.id for run in runs)
+
+
+def test_failed_commit_rolls_back_and_leaves_the_session_usable(db_session):
+    repo = BenchmarkExecutionRepository(db_session)
+    good = repo.save(_result())
+    bad = _result()
+    bad.test_run.stdout = "contains a NUL byte: \x00"  # PostgreSQL text rejects NUL
+
+    with pytest.raises(DataError):
+        repo.save(bad)
+
+    # No PendingRollbackError: the session can be used again, and only the good row exists.
+    assert [r.id for r in repo.list_by_case("bug-001-average")] == [good.id]
+    repo.save(_result())
+    assert len(repo.list_by_case("bug-001-average")) == 2
