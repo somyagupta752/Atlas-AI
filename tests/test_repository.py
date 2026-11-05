@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.benchmark import BenchmarkExecutionResult
 from app.repository import BenchmarkExecutionRepository
@@ -51,8 +51,8 @@ def test_list_by_case_returns_only_that_case_newest_first(db_session):
     second = repo.save(_result())
     repo.save(_result(case_id="other-case"))
     # now() is constant inside the test's outer transaction, so set distinct times.
-    first.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    second.created_at = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    first.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+    second.created_at = datetime(2026, 1, 2, tzinfo=UTC)
     db_session.commit()
 
     runs = repo.list_by_case("bug-001-average")
@@ -80,6 +80,7 @@ def test_tests_leave_database_clean(db_session):
     db_session.close()
 
     from sqlalchemy import text
+
     from app.database import SessionLocal
 
     with SessionLocal() as other:

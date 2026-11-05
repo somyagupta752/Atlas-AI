@@ -32,6 +32,8 @@ def run_tests(command: list[str], timeout: float) -> TestRunResult:
             capture_output=True,
             text=True,
             timeout=timeout,
+            # Nonzero exit codes are data we classify, not errors to raise.
+            check=False,
         )
     except subprocess.TimeoutExpired as exc:
         return TestRunResult(

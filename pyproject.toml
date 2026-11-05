@@ -24,3 +24,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's Depends()/Query() in argument defaults is the framework's DI pattern.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
