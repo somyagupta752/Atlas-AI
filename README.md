@@ -166,3 +166,11 @@ The script indexes the repository under the ID `atlas-ai`. It refuses to run if 
 | hybrid | 0.32 | 0.72 | 0.85 | 0.558 |
 
 Hybrid has the best recall and MRR. Its P@1 is lower than keyword or vector alone. If keyword and vector both rank a chunk first but graph search does not list it, that chunk can drop below graph neighbors that collect three RRF contributions. The cases `error-not-allowed-root` and `parse-without-executing` show this.
+
+### Known limitations
+
+These limit how far the results can be trusted. They are not defects in the design.
+
+- The benchmark numbers come from hashing embeddings. They test the retrieval pipeline, not a semantic embedding model. A real model can change the ranking a lot, so measure again before comparing strategies.
+- 19 cases about one repository work as a regression check. They do not show general retrieval quality. Add deliberately hard queries and other repositories before drawing conclusions.
+- Graph candidate selection does not tell production code from test code. In the `build-graph-dependencies` case, test functions that call `GraphService.build_graph` crowd out its production callees. Fix this in a later ranking change, not with a special case.
