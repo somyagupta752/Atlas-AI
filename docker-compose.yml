@@ -17,5 +17,23 @@ services:
       timeout: 3s
       retries: 10
 
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: atlas-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/atlas_dev_password
+    ports:
+      # Host ports 7475/7688 avoid clashing with other Neo4j instances on 7474/7687.
+      - "7475:7474"
+      - "7688:7687"
+    volumes:
+      - atlas_neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   atlas_pgdata:
+  atlas_neo4jdata:

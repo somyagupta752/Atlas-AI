@@ -312,6 +312,7 @@ def test_from_imports():
         "alias": None,
         "is_relative": False,
         "level": 0,
+        "scope": None,
         "line": 2,
     }
     assert [(i.name, i.alias) for i in parsed.imports[1:]] == [
@@ -429,3 +430,94 @@ def test_empty_module_extracts_nothing():
 
     assert parsed.status == FileStatus.SUCCESS
     assert parsed.classes == parsed.functions == parsed.imports == parsed.calls == []
+
+
+# --- import scope and name bindings ---------------------------------------
+
+
+def test_imports_record_their_enclosing_scope():
+    parsed = _extract(
+        """
+        import os
+
+        def handler():
+            from app.db import session
+        """
+    )
+
+    assert [(i.module, i.scope) for i in parsed.imports] == [("os", None), ("app.db", "handler")]
+
+
+def test_assignments_keep_constructor_and_annotation_evidence():
+    parsed = _extract(
+        """
+        service = Service()
+
+        class Controller:
+            repo: Repository
+
+            def __init__(self):
+                self.service = UserService(config)
+                self.count = 0
+        """
+    )
+
+    bindings = [(a.scope, a.target, a.value_call, a.annotation) for a in parsed.assignments]
+    assert bindings == [
+        (None, "service", "Service", None),
+        ("Controller", "repo", None, "Repository"),
+        ("Controller.__init__", "self.service", "UserService", None),
+        ("Controller.__init__", "self.count", None, None),
+    ]
+
+
+def test_other_binding_forms_are_recorded_without_evidence():
+    parsed = _extract(
+        """
+        def f(items):
+            a, *b = items
+            x += 1
+            for i in items:
+                pass
+            with open(p) as handle:
+                pass
+            try:
+                pass
+            except ValueError as err:
+                pass
+            if (n := len(items)):
+                pass
+            items[0] = 1
+        """
+    )
+
+    targets = {a.target: a.value_call for a in parsed.assignments}
+    assert targets == {
+        "a": None,
+        "b": None,
+        "x": None,
+        "i": None,
+        "handle": None,
+        "err": None,
+        "n": "len",
+    }
+
+
+def test_comprehension_lambda_and_match_bindings():
+    parsed = _extract(
+        """
+        def f(rows, cmd):
+            pairs = {k: v for k, v in rows}
+            key = lambda item, *rest: item
+            match cmd:
+                case [first, *others]:
+                    pass
+                case {"x": 1, **extra}:
+                    pass
+                case Point(x=px) as whole:
+                    pass
+        """
+    )
+
+    targets = {a.target for a in parsed.assignments}
+    assert targets >= {"k", "v", "item", "rest", "first", "others", "extra", "px", "whole"}

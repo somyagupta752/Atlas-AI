@@ -4,6 +4,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.knowledge_graph.models import REPOSITORY_ID_PATTERN
+
 
 class RunBenchmarkRequest(BaseModel):
     case_id: str
@@ -35,3 +37,11 @@ class AnalyzeRepositoryRequest(BaseModel):
         if not Path(value).expanduser().is_absolute():
             raise ValueError("repository_path must be an absolute path")
         return value
+
+
+class BuildGraphRequest(AnalyzeRepositoryRequest):
+    repository_id: str | None = Field(
+        default=None,
+        pattern=REPOSITORY_ID_PATTERN,
+        description="Stable graph ID. Defaults to the directory name, lower-cased.",
+    )

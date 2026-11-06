@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
     "fastapi>=0.162.0",
+    "neo4j>=6.4.1",
     "psycopg[binary]>=3.3.8",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.2",
@@ -24,6 +25,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["neo4j: needs a running Neo4j (docker compose up -d neo4j)"]
 
 [tool.ruff.lint.flake8-bugbear]
 # FastAPI's Depends()/Query() in argument defaults is the framework's DI pattern.

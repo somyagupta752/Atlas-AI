@@ -23,3 +23,33 @@ def db_session() -> Iterator[Session]:
         session.close()
         transaction.rollback()
         connection.close()
+
+
+@pytest.fixture
+def write_repo(tmp_path):
+    """Write ``{relative_path: source}`` into a fresh directory and return its path."""
+    import textwrap
+    from pathlib import Path
+
+    def write(files: dict[str, str], name: str = "repo") -> Path:
+        root = tmp_path / name
+        root.mkdir()
+        for relative, source in files.items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(textwrap.dedent(source))
+        return root
+
+    return write
+
+
+@pytest.fixture
+def make_graph(write_repo):
+    """Analyze ``{relative_path: source}`` and build its code graph."""
+    from app.code_intelligence import analyze_repository
+    from app.knowledge_graph.builder import build_code_graph
+
+    def make(files: dict[str, str], repository_id: str = "demo", name: str = "repo"):
+        return build_code_graph(analyze_repository(write_repo(files, name)), repository_id)
+
+    return make

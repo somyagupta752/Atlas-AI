@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.code_intelligence.schemas import (
+    AssignmentInfo,
     CallInfo,
     ClassInfo,
     FileStatus,
@@ -47,6 +48,7 @@ def extract_structure(tree: ast.Module, file_path: str) -> ParsedFile:
         imports=extractor.imports,
         calls=extractor.calls,
         inheritance=extractor.inheritance,
+        assignments=extractor.assignments,
     )
 
 
@@ -64,6 +66,7 @@ class _StructureExtractor(ast.NodeVisitor):
         self.imports: list[ImportInfo] = []
         self.calls: list[CallInfo] = []
         self.inheritance: list[InheritanceInfo] = []
+        self.assignments: list[AssignmentInfo] = []
         self._scopes: list[_Scope] = []
 
     # --- definitions -------------------------------------------------------
@@ -147,6 +150,7 @@ class _StructureExtractor(ast.NodeVisitor):
                 module=alias.name,
                 name=None,
                 alias=alias.asname,
+                scope=self._current_scope(),
                 line=node.lineno,
             )
             for alias in node.names
@@ -162,9 +166,120 @@ class _StructureExtractor(ast.NodeVisitor):
                 alias=alias.asname,
                 is_relative=level > 0,
                 level=level,
+                scope=self._current_scope(),
                 line=node.lineno,
             )
             for alias in node.names
+        )
+
+    # --- name bindings -----------------------------------------------------
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        single = len(node.targets) == 1
+        for target in node.targets:
+            self._record_binding(target, node.value if single else None)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._record_binding(node.target, node.value, annotation=node.annotation)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self._record_binding(node.target)
+        self.generic_visit(node)
+
+    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
+        self._record_binding(node.target, node.value)
+        self.generic_visit(node)
+
+    def visit_For(self, node: ast.For) -> None:
+        self._record_binding(node.target)
+        self.generic_visit(node)
+
+    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+        self._record_binding(node.target)
+        self.generic_visit(node)
+
+    def visit_withitem(self, node: ast.withitem) -> None:
+        if node.optional_vars is not None:
+            self._record_binding(node.optional_vars)
+        self.generic_visit(node)
+
+    # Comprehension variables, lambda parameters and match captures live in their
+    # own scopes. Recording them in the enclosing scope (without type evidence) is
+    # conservative: a resolver may lose a target, but never gains a wrong one.
+
+    def visit_comprehension(self, node: ast.comprehension) -> None:
+        self._record_binding(node.target)
+        self.generic_visit(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        for arg in _all_arguments(node.args):
+            self._append_binding(arg.arg, node.lineno)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:
+        if node.name:
+            self._append_binding(node.name, node.lineno)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:
+        if node.name:
+            self._append_binding(node.name, node.lineno)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping) -> None:
+        if node.rest:
+            self._append_binding(node.rest, node.lineno)
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self._append_binding(node.name, node.lineno)
+        self.generic_visit(node)
+
+    def _record_binding(
+        self,
+        target: ast.expr,
+        value: ast.expr | None = None,
+        annotation: ast.expr | None = None,
+    ) -> None:
+        """Record names bound by ``target``. Tuple targets lose the value evidence."""
+        if isinstance(target, ast.Tuple | ast.List):
+            for element in target.elts:
+                self._record_binding(element)
+        elif isinstance(target, ast.Starred):
+            self._record_binding(target.value)
+        elif isinstance(target, ast.Name | ast.Attribute):
+            value_call = ast.unparse(value.func) if isinstance(value, ast.Call) else None
+            value_name = (
+                ast.unparse(value) if isinstance(value, ast.Name | ast.Attribute) else None
+            )
+            self._append_binding(
+                ast.unparse(target),
+                target.lineno,
+                value_call,
+                _unparse_optional(annotation),
+                value_name,
+            )
+        # Subscript targets (x[0] = ...) mutate an object; they bind no name.
+
+    def _append_binding(
+        self,
+        target: str,
+        line: int,
+        value_call: str | None = None,
+        annotation: str | None = None,
+        value_name: str | None = None,
+    ) -> None:
+        self.assignments.append(
+            AssignmentInfo(
+                scope=self._current_scope(),
+                target=target,
+                value_call=value_call,
+                value_name=value_name,
+                annotation=annotation,
+                line=line,
+            )
         )
 
     # --- calls -------------------------------------------------------------
@@ -179,10 +294,9 @@ class _StructureExtractor(ast.NodeVisitor):
             name = func.attr
             receiver = ast.unparse(func.value)
 
-        caller = self._scopes[-1].qualified_name if self._scopes else None
         self.calls.append(
             CallInfo(
-                caller=caller,
+                caller=self._current_scope(),
                 expression=ast.unparse(func),
                 name=name,
                 receiver=receiver,
@@ -195,6 +309,9 @@ class _StructureExtractor(ast.NodeVisitor):
 
     def _parent_scope(self) -> _Scope | None:
         return self._scopes[-1] if self._scopes else None
+
+    def _current_scope(self) -> str | None:
+        return self._scopes[-1].qualified_name if self._scopes else None
 
     def _qualify(self, name: str) -> str:
         parent = self._parent_scope()

@@ -90,6 +90,23 @@ class ImportInfo(BaseModel):
     alias: str | None = None
     is_relative: bool = False
     level: int = 0  # number of leading dots in a relative import
+    scope: str | None = None  # qualified name of the enclosing function/class; None at module level
+    line: int
+
+
+class AssignmentInfo(BaseModel):
+    """A name binding: ``x = ...``, ``self.x = ...``, ``for x in``, ``with ... as x`` and similar.
+
+    Only the evidence a static resolver can use is kept: the target as written and,
+    for a plain ``target = something(...)``, the called expression. Values are never
+    evaluated.
+    """
+
+    scope: str | None  # qualified name of the enclosing function/class; None at module level
+    target: str  # "service" or "self.service"
+    value_call: str | None = None  # "UserService" for ``service = UserService()``
+    value_name: str | None = None  # "repo" for ``self.repo = repo``
+    annotation: str | None = None  # "UserService" for ``service: UserService = ...``
     line: int
 
 
@@ -126,6 +143,7 @@ class ParsedFile(BaseModel):
     imports: list[ImportInfo] = Field(default_factory=list)
     calls: list[CallInfo] = Field(default_factory=list)
     inheritance: list[InheritanceInfo] = Field(default_factory=list)
+    assignments: list[AssignmentInfo] = Field(default_factory=list)
     errors: list[ParseError] = Field(default_factory=list)
 
 
