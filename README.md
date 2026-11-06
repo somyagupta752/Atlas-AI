@@ -70,3 +70,99 @@ A rebuild replaces the graph in one transaction. If the save fails, the previous
 ### Tests
 
 Run `uv run pytest`. The tests in `tests/test_neo4j_integration.py` need the Neo4j container. They skip when it is unavailable. To fail instead of skipping, as in CI, run `REQUIRE_NEO4J=1 uv run pytest`.
+
+
+## Code retrieval
+
+`app/retrieval/` finds the code that is relevant to a bug report or a question. It combines three strategies and returns ranked evidence with source locations. It does not diagnose anything: relevance is not proof of cause. Nothing in this path calls an LLM or runs repository code.
+
+| Module | Responsibility |
+| --- | --- |
+| `models.py` | `CodeChunk`, `RetrievalResult`, `RetrievedEvidence`, `RetrievalResponse`. |
+| `chunker.py` | AST-aware chunks: classes, functions, methods, nested functions, module code. |
+| `text.py` | Identifier-aware terms (`find_by_id` gives `findbyid find by id`). |
+| `embeddings.py` | `EmbeddingProvider` protocol, local hashing provider, HTTP provider, test fake. |
+| `repository.py` | All SQL for `code_chunks` and `repository_indexes`. Atomic index replacement. |
+| `keyword_search.py` | Exact identifier match plus PostgreSQL full-text search. |
+| `vector_search.py` | pgvector cosine similarity. |
+| `graph_search.py` | Neo4j neighborhood expansion with weighted, directed paths. |
+| `fusion.py` | Reciprocal Rank Fusion (k = 60, equal weights). |
+| `ranker.py` | Overlap folding and evidence packaging. |
+| `indexing.py` | `RepositoryIndexer.index_repository`: incremental, all-or-nothing. |
+| `service.py` | `RetrievalService.retrieve_code`: the hybrid pipeline. |
+| `evaluation.py` | Precision@K, Recall@K, MRR. |
+
+### Set up
+
+1. Start PostgreSQL with pgvector: `docker compose up -d postgres`. The image is `pgvector/pgvector:0.8.0-pg16`.
+2. Apply migrations: `uv run alembic upgrade head`. This enables the `vector` extension and creates the tables.
+3. Optional: build the graph with `POST /repositories/graph/build` and the same repository ID. Without it, search uses keyword and vector only.
+
+### Chunks
+
+A chunk is one class, function, method, nested function or run of module-level statements. Its line range is exact, and its `entity_id` is the Task 10 graph node ID. Class and method chunks overlap on purpose, because the class keeps context that the method lacks. A function longer than 150 lines or 12,000 characters becomes consecutive `#partN` windows. A larger class becomes a header chunk. A file with a syntax error stays searchable as line windows.
+
+Chunk IDs derive from entity IDs, for example `chunk:function:atlas-ai:app/user.py::UserService.get_user`. They are stable for unchanged source and unique across repositories.
+
+### Embeddings
+
+The default provider, `hashing`, runs locally. It hashes identifier sub-terms into 1024 dimensions. It relates `get_user` to "user", but it does not know that "fetch" and "load" are similar. For a real model, set `EMBEDDING_PROVIDER=openai_compatible` and `EMBEDDING_BASE_URL`, for example a local Ollama.
+
+If the endpoint is not on localhost, it receives your repository's source code. Such an endpoint is refused unless `EMBEDDING_ALLOW_EXTERNAL=true`. An API key is never sent over plain HTTP to another host. Error messages never include the key or the response body.
+
+The `embedding` column is `VECTOR(1024)`. `EMBEDDING_DIMENSIONS` must match it, or startup disables the provider. A model with another dimension needs a new migration. Each vector is stored with its `model_id`, and search compares only vectors with the same `model_id`.
+
+### Indexing
+
+Incremental indexing works by content hash. Each chunk's `embedding_hash` is the SHA-256 of the model ID plus the embedded text. A reindex reuses every stored vector with the same hash. Only new or changed chunks are embedded. A model change changes every hash, so everything is embedded again.
+
+Failure handling is all or nothing:
+
+1. Parsing, chunking and embedding run first. They do not touch stored data.
+2. One transaction then upserts changed rows, deletes stale ones and publishes `index_version + 1`.
+
+If any step fails, including an embedding batch halfway through, the attempt is marked `failed` and the previous index stays searchable.
+
+### Retrieval
+
+1. Keyword search. An exact name match scores 1 to 3. Full-text search uses `ts_rank` over the `simple` configuration, with names weighted above bodies.
+2. Vector search. The score is `similarity = 1 - cosine_distance`, in [-1, 1].
+3. Graph search. Seeds are the entities named in the query plus the top 5 keyword and vector hits. Paths of up to 2 hops are followed in both directions and never pass through the Repository node.
+   - Each step is weighted by type and direction. A caller weighs 1.0, a containing file 0.5.
+   - An `inferred` step costs a factor of 0.7.
+   - "Who calls X" favours callers, and "what does X call" favours callees.
+4. Reciprocal Rank Fusion merges the lists by rank, not by raw score, because the three score scales are not comparable.
+5. Overlap folding. A chunk inside a higher-ranked chunk of the same file is folded into that chunk's `merged` list, with its own reason.
+
+If Neo4j or the embedding provider fails, that strategy is reported in `strategies` and the others still answer.
+
+### Endpoints
+
+| Method | Path | Result |
+| --- | --- | --- |
+| POST | `/repositories/{repository_id}/index` | Index or reindex. The body is `{"repository_path": ...}`. |
+| GET | `/repositories/{repository_id}/index/status` | State, version, model, counts and last error. |
+| DELETE | `/repositories/{repository_id}/index` | 204, or 404 if there is no index. |
+| POST | `/repositories/{repository_id}/search` | The body is `{"query": ..., "limit": 1-50}`. |
+
+Indexing uses the same `ALLOWED_REPOSITORY_ROOTS` check as the other repository endpoints. Index errors: 403 outside the allowlist, 404 for a missing path, 409 if the ID belongs to another directory, 503 if the embedding provider fails. Search errors: 422 for an empty query or an invalid limit, 404 if the repository is not indexed. Responses never contain embeddings.
+
+### Evaluation
+
+`benchmarks/retrieval/cases.json` holds 19 cases about this repository. Expected results are graph entity IDs. To measure:
+
+```bash
+uv run python benchmarks/retrieval/evaluate.py            # graph built in memory
+uv run python benchmarks/retrieval/evaluate.py --graph neo4j --output results.json
+```
+
+The script indexes the repository under the ID `atlas-ai`. It refuses to run if an expected entity no longer exists. Results with the hashing provider, on the repository as of this change:
+
+| Strategy | P@1 | R@5 | R@10 | MRR |
+| --- | --- | --- | --- | --- |
+| keyword | 0.37 | 0.61 | 0.69 | 0.523 |
+| vector | 0.37 | 0.62 | 0.72 | 0.516 |
+| graph | 0.16 | 0.39 | 0.39 | 0.281 |
+| hybrid | 0.32 | 0.72 | 0.85 | 0.558 |
+
+Hybrid has the best recall and MRR. Its P@1 is lower than keyword or vector alone. If keyword and vector both rank a chunk first but graph search does not list it, that chunk can drop below graph neighbors that collect three RRF contributions. The cases `error-not-allowed-root` and `parse-without-executing` show this.

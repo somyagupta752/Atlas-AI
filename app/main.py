@@ -39,11 +39,35 @@ from app.knowledge_graph.service import (
     RepositoryIdConflictError,
 )
 from app.repository import BenchmarkExecutionRepository
+from app.retrieval.embeddings import (
+    EmbeddingConfigurationError,
+    EmbeddingError,
+    EmbeddingProvider,
+    create_embedding_provider,
+)
+from app.retrieval.graph_search import GraphContextSource, GraphSearcher
+from app.retrieval.indexing import (
+    IndexingError,
+    IndexResult,
+    RepositoryIndexConflictError,
+    RepositoryIndexer,
+)
+from app.retrieval.keyword_search import KeywordSearcher
+from app.retrieval.models import RetrievalResponse
+from app.retrieval.repository import ChunkRepository, IndexState
+from app.retrieval.service import (
+    InvalidRetrievalRequestError,
+    RepositoryNotIndexedError,
+    RetrievalService,
+)
+from app.retrieval.vector_search import VectorSearcher
 from app.schemas import (
     AnalyzeRepositoryRequest,
     BenchmarkExecutionRecord,
     BuildGraphRequest,
+    IndexRepositoryRequest,
     RunBenchmarkRequest,
+    SearchRepositoryRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,9 +79,16 @@ BENCHMARK_TIMEOUT_SECONDS = 10
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Create one pooled Neo4j driver for the process and close it on shutdown."""
+    """Create the Neo4j driver and the embedding provider once per process."""
     app.state.graph_repository = None
-    config = Neo4jConfig.from_settings(get_settings())
+    settings = get_settings()
+    app.state.embedding_provider = None
+    try:
+        app.state.embedding_provider = create_embedding_provider(settings)
+    except EmbeddingConfigurationError as exc:
+        # Indexing returns 503 and search runs without the vector strategy.
+        logger.warning("Embedding provider not available: %s", exc)
+    config = Neo4jConfig.from_settings(settings)
     driver = create_driver(config) if config else None
     if driver is not None and config is not None:
         repository = Neo4jGraphRepository(driver, config.database)
@@ -75,6 +106,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         if driver is not None:
             driver.close()
+        close = getattr(app.state.embedding_provider, "close", None)
+        if callable(close):
+            close()
 
 
 app = FastAPI(title="Atlas AI", lifespan=lifespan)
@@ -229,3 +263,96 @@ def delete_repository_graph(
     if not service.delete_graph(repository_id):
         raise HTTPException(status_code=404, detail=f"No graph for {repository_id}")
     return Response(status_code=204)
+
+
+# --- code retrieval -----------------------------------------------------------
+
+
+def get_embedding_provider_optional(request: Request) -> EmbeddingProvider | None:
+    return getattr(request.app.state, "embedding_provider", None)
+
+
+def get_graph_context_source(request: Request) -> GraphContextSource | None:
+    """The graph store, when it supports retrieval reads. None disables graph retrieval."""
+    repository = getattr(request.app.state, "graph_repository", None)
+    return repository if hasattr(repository, "expand_neighborhood") else None
+
+
+def get_repository_indexer(
+    db: Session = Depends(get_db),
+    provider: EmbeddingProvider | None = Depends(get_embedding_provider_optional),
+) -> RepositoryIndexer:
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Embedding provider is not configured")
+    return RepositoryIndexer(
+        ChunkRepository(db), provider, batch_size=get_settings().embedding_batch_size
+    )
+
+
+def get_retrieval_service(
+    db: Session = Depends(get_db),
+    provider: EmbeddingProvider | None = Depends(get_embedding_provider_optional),
+    graph_source: GraphContextSource | None = Depends(get_graph_context_source),
+) -> RetrievalService:
+    chunks = ChunkRepository(db)
+    return RetrievalService(
+        chunks,
+        KeywordSearcher(db),
+        VectorSearcher(db, provider) if provider is not None else None,
+        GraphSearcher(graph_source, chunks) if graph_source is not None else None,
+    )
+
+
+@app.post("/repositories/{repository_id}/index")
+def index_repository_endpoint(
+    repository_id: RepositoryIdParam,
+    request: IndexRepositoryRequest,
+    allowed_roots: list[Path] = Depends(get_allowed_repository_roots),
+    indexer: RepositoryIndexer = Depends(get_repository_indexer),
+) -> IndexResult:
+    target = authorize_repository_path(request.repository_path, allowed_roots)
+    try:
+        return indexer.index_repository(repository_id, target)
+    except RepositoryNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RepositoryNotADirectoryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RepositoryIndexConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except IndexingError as exc:
+        status = 503 if isinstance(exc.__cause__, EmbeddingError) else 500
+        raise HTTPException(
+            status_code=status,
+            detail={"message": str(exc), "previous_index": "unchanged"},
+        ) from exc
+
+
+@app.get("/repositories/{repository_id}/index/status")
+def get_index_status(
+    repository_id: RepositoryIdParam, db: Session = Depends(get_db)
+) -> IndexState:
+    state = ChunkRepository(db).get_index_state(repository_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"No index for {repository_id}")
+    return state
+
+
+@app.delete("/repositories/{repository_id}/index", status_code=204)
+def delete_index(repository_id: RepositoryIdParam, db: Session = Depends(get_db)) -> Response:
+    if not ChunkRepository(db).delete_index(repository_id):
+        raise HTTPException(status_code=404, detail=f"No index for {repository_id}")
+    return Response(status_code=204)
+
+
+@app.post("/repositories/{repository_id}/search")
+def search_repository(
+    repository_id: RepositoryIdParam,
+    request: SearchRepositoryRequest,
+    service: RetrievalService = Depends(get_retrieval_service),
+) -> RetrievalResponse:
+    try:
+        return service.retrieve_code(repository_id, request.query, request.limit)
+    except InvalidRetrievalRequestError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RepositoryNotIndexedError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

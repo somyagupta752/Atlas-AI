@@ -45,3 +45,19 @@ class BuildGraphRequest(AnalyzeRepositoryRequest):
         pattern=REPOSITORY_ID_PATTERN,
         description="Stable graph ID. Defaults to the directory name, lower-cased.",
     )
+
+
+class IndexRepositoryRequest(AnalyzeRepositoryRequest):
+    """Body of POST /repositories/{repository_id}/index."""
+
+
+class SearchRepositoryRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=4000)
+    limit: int = Field(default=10, ge=1, le=50)
+
+    @field_validator("query")
+    @classmethod
+    def must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("query must not be empty")
+        return value.strip()

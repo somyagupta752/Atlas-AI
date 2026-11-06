@@ -173,3 +173,63 @@ MATCH (child:Class)-[:EXTENDS]->(parent:Class {id: $class_id})
 RETURN child AS node
 ORDER BY child.id
 """
+
+# --- retrieval (Task 11) ----------------------------------------------------
+# Every query is restricted to one repository through $repository_id, on every
+# node of every path. Repository nodes are never traversed: they connect every
+# file, so passing through one would pull in the whole repository.
+
+MAX_EXPANSION_DEPTH = 3
+
+FIND_ENTITIES_BY_NAME = """
+MATCH (n:CodeEntity {repository_id: $repository_id})
+WHERE ((n:Function OR n:Class)
+        AND (toLower(n.name) IN $names OR toLower(n.qualified_name) IN $names))
+   OR (n:File AND toLower(coalesce(n.module, '')) IN $names)
+RETURN n.id AS id,
+       [label IN labels(n) WHERE label <> 'CodeEntity'][0] AS label,
+       properties(n) AS properties
+ORDER BY id
+LIMIT $limit
+"""
+
+# A variable-length bound cannot be a parameter, so one query per depth is
+# generated here from an integer range. No input reaches the query text.
+EXPAND_NEIGHBORHOOD: dict[int, str] = {
+    depth: f"""
+UNWIND $seed_ids AS seed_id
+MATCH (seed:CodeEntity {{id: seed_id}})
+WHERE seed.repository_id = $repository_id
+CALL {{
+    WITH seed
+    MATCH p = (seed)-[*1..{depth}]-(n:CodeEntity)
+    WHERE ALL(r IN relationships(p) WHERE type(r) IN $relationship_types)
+      AND ALL(x IN nodes(p) WHERE x.repository_id = $repository_id AND NOT x:Repository)
+      AND ALL(i IN range(0, size(nodes(p)) - 2) WHERE NOT nodes(p)[i] IN nodes(p)[i + 1..])
+    RETURN p, n
+    ORDER BY length(p), n.id
+    LIMIT $limit_per_seed
+}}
+RETURN seed.id AS seed_id,
+       [x IN nodes(p) | x.id] AS node_ids,
+       [r IN relationships(p) | {{
+           type: type(r),
+           source_id: startNode(r).id,
+           target_id: endNode(r).id,
+           resolution_status: r.resolution_status
+       }}] AS steps,
+       n.id AS entity_id,
+       [label IN labels(n) WHERE label <> 'CodeEntity'][0] AS label,
+       properties(n) AS properties
+"""
+    for depth in range(1, MAX_EXPANSION_DEPTH + 1)
+}
+
+UNRESOLVED_FOR_ENTITIES = """
+MATCH (u:UnresolvedReference {repository_id: $repository_id})
+WHERE u.source_id IN $entity_ids
+RETURN u.source_id AS source_id, u.kind AS kind, u.reason AS reason,
+       u.expression AS expression, u.line_number AS line_number
+ORDER BY source_id, line_number, u.id
+LIMIT $limit
+"""

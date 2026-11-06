@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # PostgreSQL 16 with the pgvector extension (code retrieval embeddings).
+    image: pgvector/pgvector:0.8.0-pg16
     container_name: atlas-postgres
     environment:
       POSTGRES_USER: atlas

@@ -1,0 +1,173 @@
+[
+  {
+    "id": "exact-get-db",
+    "category": "exact_function",
+    "repository_id": "atlas-ai",
+    "query": "get_db",
+    "expected_chunks": ["function:atlas-ai:app/database.py::get_db"]
+  },
+  {
+    "id": "db-session-creation",
+    "category": "database",
+    "repository_id": "atlas-ai",
+    "query": "Where is database session creation implemented?",
+    "expected_chunks": [
+      "function:atlas-ai:app/database.py::get_db",
+      "file:atlas-ai:app/database.py"
+    ]
+  },
+  {
+    "id": "runs-benchmark-commands",
+    "category": "natural_language",
+    "repository_id": "atlas-ai",
+    "query": "Which function runs benchmark commands?",
+    "expected_chunks": [
+      "function:atlas-ai:app/test_runner.py::run_tests",
+      "function:atlas-ai:app/benchmark.py::run_benchmark"
+    ]
+  },
+  {
+    "id": "class-execution-repository",
+    "category": "class_name",
+    "repository_id": "atlas-ai",
+    "query": "BenchmarkExecutionRepository",
+    "expected_chunks": ["class:atlas-ai:app/repository.py::BenchmarkExecutionRepository"]
+  },
+  {
+    "id": "save-benchmark-execution",
+    "category": "database",
+    "repository_id": "atlas-ai",
+    "query": "Where are benchmark executions saved to the database and committed?",
+    "expected_chunks": ["function:atlas-ai:app/repository.py::BenchmarkExecutionRepository.save"]
+  },
+  {
+    "id": "error-not-allowed-root",
+    "category": "error_message",
+    "repository_id": "atlas-ai",
+    "query": "403 Forbidden: Repository path is not in an allowed root",
+    "expected_chunks": ["function:atlas-ai:app/main.py::authorize_repository_path"]
+  },
+  {
+    "id": "error-graph-validation",
+    "category": "error_message",
+    "repository_id": "atlas-ai",
+    "query": "Graph failed validation with 3 error(s)",
+    "expected_chunks": [
+      "class:atlas-ai:app/knowledge_graph/repository.py::InvalidGraphError",
+      "function:atlas-ai:app/knowledge_graph/repository.py::InvalidGraphError.__init__"
+    ]
+  },
+  {
+    "id": "error-zero-division",
+    "category": "error_message",
+    "repository_id": "atlas-ai",
+    "query": "ZeroDivisionError when calculating the average of an empty list of numbers",
+    "expected_chunks": ["function:atlas-ai:benchmarks/bug_001_average/solution.py::calculate_average"]
+  },
+  {
+    "id": "endpoint-run-history",
+    "category": "api_endpoint",
+    "repository_id": "atlas-ai",
+    "query": "Which API endpoint lists the run history of a benchmark?",
+    "expected_chunks": ["function:atlas-ai:app/main.py::list_benchmark_runs"]
+  },
+  {
+    "id": "endpoint-graph-build",
+    "category": "api_endpoint",
+    "repository_id": "atlas-ai",
+    "query": "POST /repositories/graph/build",
+    "expected_chunks": ["function:atlas-ai:app/main.py::build_repository_graph"]
+  },
+  {
+    "id": "inherits-invalid-repository",
+    "category": "inheritance",
+    "repository_id": "atlas-ai",
+    "query": "Which exceptions inherit from InvalidRepositoryError?",
+    "expected_chunks": [
+      "class:atlas-ai:app/code_intelligence/scanner.py::RepositoryNotFoundError",
+      "class:atlas-ai:app/code_intelligence/scanner.py::RepositoryNotADirectoryError"
+    ]
+  },
+  {
+    "id": "inherits-analyze-request",
+    "category": "inheritance",
+    "repository_id": "atlas-ai",
+    "query": "Request models that extend AnalyzeRepositoryRequest",
+    "expected_chunks": [
+      "class:atlas-ai:app/schemas.py::BuildGraphRequest",
+      "class:atlas-ai:app/schemas.py::IndexRepositoryRequest"
+    ]
+  },
+  {
+    "id": "imports-analyze-repository",
+    "category": "imports",
+    "repository_id": "atlas-ai",
+    "query": "Which application modules import analyze_repository from app.code_intelligence?",
+    "expected_chunks": [
+      "file:atlas-ai:app/main.py",
+      "file:atlas-ai:app/knowledge_graph/service.py"
+    ]
+  },
+  {
+    "id": "build-graph-dependencies",
+    "category": "dependencies",
+    "repository_id": "atlas-ai",
+    "query": "What does GraphService.build_graph call?",
+    "expected_chunks": [
+      "function:atlas-ai:app/code_intelligence/analyzer.py::analyze_repository",
+      "function:atlas-ai:app/knowledge_graph/builder.py::build_code_graph",
+      "function:atlas-ai:app/knowledge_graph/builder.py::derive_repository_id",
+      "function:atlas-ai:app/knowledge_graph/repository.py::ensure_valid",
+      "function:atlas-ai:app/knowledge_graph/service.py::GraphService._check_ownership"
+    ]
+  },
+  {
+    "id": "callers-authorize-path",
+    "category": "graph_expansion",
+    "repository_id": "atlas-ai",
+    "query": "Who calls authorize_repository_path?",
+    "expected_chunks": [
+      "function:atlas-ai:app/main.py::analyze_repository_endpoint",
+      "function:atlas-ai:app/main.py::build_repository_graph",
+      "function:atlas-ai:app/main.py::index_repository_endpoint"
+    ]
+  },
+  {
+    "id": "bug-403-on-graph-build",
+    "category": "graph_expansion",
+    "repository_id": "atlas-ai",
+    "query": "Users get a 403 from build_repository_graph even though their path is allowed",
+    "expected_chunks": [
+      "function:atlas-ai:app/main.py::build_repository_graph",
+      "function:atlas-ai:app/main.py::authorize_repository_path",
+      "function:atlas-ai:app/main.py::is_within_allowed_roots"
+    ]
+  },
+  {
+    "id": "scan-python-files",
+    "category": "natural_language",
+    "repository_id": "atlas-ai",
+    "query": "How are Python files discovered while skipping ignored directories like .venv?",
+    "expected_chunks": [
+      "function:atlas-ai:app/code_intelligence/scanner.py::scan_python_files",
+      "function:atlas-ai:app/code_intelligence/scanner.py::is_ignored_directory"
+    ]
+  },
+  {
+    "id": "parse-without-executing",
+    "category": "natural_language",
+    "repository_id": "atlas-ai",
+    "query": "Parse Python source text into an AST without executing it",
+    "expected_chunks": ["function:atlas-ai:app/code_intelligence/parser.py::parse_source"]
+  },
+  {
+    "id": "neo4j-driver-creation",
+    "category": "natural_language",
+    "repository_id": "atlas-ai",
+    "query": "Where is the Neo4j driver created from the configured credentials?",
+    "expected_chunks": [
+      "function:atlas-ai:app/knowledge_graph/neo4j_client.py::create_driver",
+      "function:atlas-ai:app/knowledge_graph/neo4j_client.py::Neo4jConfig.from_settings"
+    ]
+  }
+]

@@ -181,6 +181,57 @@ class Neo4jGraphRepository:
     def find_subclasses(self, class_id: str) -> list[GraphNode]:
         return self._find_nodes(queries.SUBCLASSES_OF_CLASS, class_id=class_id)
 
+    # --- retrieval reads (Task 11) -------------------------------------------
+
+    def find_entities_by_name(
+        self, repository_id: str, names: list[str], limit: int
+    ) -> list[dict[str, Any]]:
+        """Function, Class and File nodes whose name, qualified name or module is in ``names``."""
+        return self._records(
+            queries.FIND_ENTITIES_BY_NAME,
+            repository_id=repository_id,
+            names=[name.lower() for name in names],
+            limit=limit,
+        )
+
+    def expand_neighborhood(
+        self,
+        repository_id: str,
+        seed_ids: list[str],
+        max_depth: int,
+        relationship_types: list[str],
+        limit_per_seed: int,
+    ) -> list[dict[str, Any]]:
+        """Simple paths of 1..``max_depth`` hops from each seed, in either direction."""
+        if max_depth not in queries.EXPAND_NEIGHBORHOOD:
+            raise ValueError(f"max_depth must be 1..{queries.MAX_EXPANSION_DEPTH}")
+        unknown = set(relationship_types) - {str(t) for t in RelationshipType}
+        if unknown:
+            raise ValueError(f"unknown relationship types: {sorted(unknown)}")
+        return self._records(
+            queries.EXPAND_NEIGHBORHOOD[max_depth],
+            repository_id=repository_id,
+            seed_ids=seed_ids,
+            relationship_types=relationship_types,
+            limit_per_seed=limit_per_seed,
+        )
+
+    def unresolved_for_entities(
+        self, repository_id: str, entity_ids: list[str], limit: int
+    ) -> list[dict[str, Any]]:
+        return self._records(
+            queries.UNRESOLVED_FOR_ENTITIES,
+            repository_id=repository_id,
+            entity_ids=entity_ids,
+            limit=limit,
+        )
+
+    def _records(self, query: str, **params: Any) -> list[dict[str, Any]]:
+        def read(tx: ManagedTransaction) -> list[dict[str, Any]]:
+            return [record.data() for record in tx.run(query, params)]
+
+        return self._read(read)
+
     # --- internals ----------------------------------------------------------
 
     def _replace_graph(
