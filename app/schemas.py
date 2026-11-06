@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RunBenchmarkRequest(BaseModel):
@@ -22,3 +23,15 @@ class BenchmarkExecutionRecord(BaseModel):
     duration_seconds: float
     timed_out: bool
     created_at: datetime
+
+
+class AnalyzeRepositoryRequest(BaseModel):
+    repository_path: str = Field(min_length=1, description="Absolute path to a local repository")
+
+    @field_validator("repository_path")
+    @classmethod
+    def must_be_absolute(cls, value: str) -> str:
+        # Relative paths would resolve against the server's working directory.
+        if not Path(value).expanduser().is_absolute():
+            raise ValueError("repository_path must be an absolute path")
+        return value
