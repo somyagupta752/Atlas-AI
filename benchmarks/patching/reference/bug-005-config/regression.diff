@@ -1,0 +1,10 @@
+--- a/config_loader.py
++++ b/config_loader.py
+@@ -12,5 +12,5 @@
+         if not 1 <= port <= 65535:
+             raise ConfigError(f"PORT out of range: {port}")
+         return port
+-    except Exception:
+-        return DEFAULT_PORT
++    except ValueError:
++        raise ConfigError("PORT is not a number") from None

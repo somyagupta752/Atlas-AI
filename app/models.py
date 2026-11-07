@@ -193,3 +193,69 @@ class InvestigationEventRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- patch generation and verification ------------------------------------------
+
+
+class PatchProposalRecord(Base):
+    """One patch attempt. Every attempt is kept, including failed ones.
+
+    ``status`` follows the lifecycle in ``app.patching.models``; ``status_history``
+    records each transition with its time. ``provenance`` names the model, prompt
+    version, usage and the source snapshot the patch was generated against.
+    """
+
+    __tablename__ = "patch_proposals"
+    __table_args__ = (
+        UniqueConstraint("execution_id", "attempt_number", name="uq_patch_proposals_execution_attempt"),
+        Index("ix_patch_proposals_investigation", "investigation_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    investigation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("investigations.id")
+    )
+    execution_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    repository_id: Mapped[str] = mapped_column(String, index=True)
+    attempt_number: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(Text)
+    rationale: Mapped[str] = mapped_column(Text)
+    unified_diff: Mapped[str] = mapped_column(Text)
+    diff_sha256: Mapped[str | None] = mapped_column(String, nullable=True)
+    affected_files: Mapped[list] = mapped_column(JSONB)
+    assumptions: Mapped[list] = mapped_column(JSONB)
+    risks: Mapped[list] = mapped_column(JSONB)
+    validation_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    status: Mapped[str] = mapped_column(String, index=True)
+    status_history: Mapped[list] = mapped_column(JSONB)
+    provenance: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PatchVerificationRecord(Base):
+    """The verification of one patch attempt: every check and both sides of the comparison."""
+
+    __tablename__ = "patch_verifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    patch_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("patch_proposals.id"), unique=True
+    )
+    status: Mapped[str] = mapped_column(String, index=True)
+    checks: Mapped[list] = mapped_column(JSONB)
+    before_results: Mapped[dict] = mapped_column(JSONB)
+    after_results: Mapped[dict] = mapped_column(JSONB)
+    comparison: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    summary: Mapped[str] = mapped_column(Text)
+    failure_reasons: Mapped[list] = mapped_column(JSONB)
+    environment: Mapped[dict] = mapped_column(JSONB)
+    duration_seconds: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

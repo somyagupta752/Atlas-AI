@@ -1,0 +1,6 @@
+--- a/pagination.py
++++ b/pagination.py
+@@ -1,2 +1,2 @@
+ def total_pages(item_count: int, per_page: int) -> int:
+-    return item_count // per_page
++    return int(item_count / per_page)

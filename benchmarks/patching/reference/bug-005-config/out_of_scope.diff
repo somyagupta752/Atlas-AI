@@ -1,0 +1,11 @@
+--- a/config_loader.py
++++ b/config_loader.py
+@@ -15,2 +15,4 @@
+     except Exception:
+         return DEFAULT_PORT
++
++# configuration is also read from .env
+--- a/.env
++++ b/.env
+@@ -0,0 +1 @@
++PORT=8080

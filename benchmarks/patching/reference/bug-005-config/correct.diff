@@ -1,0 +1,16 @@
+--- a/config_loader.py
++++ b/config_loader.py
+@@ -10,7 +10,9 @@
+     try:
+         port = int(env["PORT"])
+-        if not 1 <= port <= 65535:
+-            raise ConfigError(f"PORT out of range: {port}")
+-        return port
+-    except Exception:
++    except KeyError:
+         return DEFAULT_PORT
++    except ValueError:
++        raise ConfigError(f"PORT is not a number: {env['PORT']!r}") from None
++    if not 1 <= port <= 65535:
++        raise ConfigError(f"PORT out of range: {port}")
++    return port

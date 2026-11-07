@@ -1,0 +1,89 @@
+[
+  {
+    "case_id": "bug-001-average",
+    "repository_id": "bench-bug-001-average",
+    "investigation_case": "bug-001-average",
+    "repository_path": "benchmarks/bug_001_average",
+    "expected_files": ["solution.py"],
+    "expected_behaviour": "An empty input list returns 0.0; other averages are unchanged.",
+    "required_tests": ["test_average_of_empty_list"],
+    "reference_patches": [
+      {"name": "correct", "file": "reference/bug-001-average/correct.diff", "expected_status": "verified",
+       "description": "Return 0.0 for an empty list."},
+      {"name": "no_fix", "file": "reference/bug-001-average/no_fix.diff", "expected_status": "rejected",
+       "description": "Changes the divisor but still divides by zero."},
+      {"name": "regression", "file": "reference/bug-001-average/regression.diff", "expected_status": "rejected",
+       "description": "Empty list works, every other average is wrong."},
+      {"name": "syntax_error", "file": "reference/bug-001-average/syntax_error.diff", "expected_status": "rejected",
+       "description": "The fix with a missing colon."},
+      {"name": "test_tamper", "file": "reference/bug-001-average/test_tamper.diff", "expected_status": "validation_failed",
+       "description": "Weakens the failing test instead of fixing the code."}
+    ]
+  },
+  {
+    "case_id": "bug-002-missing-record",
+    "repository_id": "bench-bug-002-missing-record",
+    "investigation_case": "bug-002-missing-record",
+    "repository_path": "benchmarks/bug_002_missing_record",
+    "expected_files": ["users_api/routes.py", "users_api/service.py"],
+    "expected_behaviour": "A missing user returns (404, body); an existing user still returns (200, profile).",
+    "required_tests": ["test_missing_user_returns_404"],
+    "reference_patches": [
+      {"name": "correct", "file": "reference/bug-002-missing-record/correct.diff", "expected_status": "verified",
+       "description": "Return 404 when the service finds no user."},
+      {"name": "regression", "file": "reference/bug-002-missing-record/regression.diff", "expected_status": "rejected",
+       "description": "Returns 404 for every user."}
+    ]
+  },
+  {
+    "case_id": "bug-003-pagination",
+    "repository_id": "bench-bug-003-pagination",
+    "investigation_case": "bug-003-pagination",
+    "repository_path": "benchmarks/bug_003_pagination",
+    "expected_files": ["pagination.py"],
+    "expected_behaviour": "total_pages rounds up, so a partial last page is returned; pages beyond the end stay empty.",
+    "required_tests": ["test_partial_last_page"],
+    "reference_patches": [
+      {"name": "correct", "file": "reference/bug-003-pagination/correct.diff", "expected_status": "verified",
+       "description": "Ceiling division."},
+      {"name": "no_fix", "file": "reference/bug-003-pagination/no_fix.diff", "expected_status": "rejected",
+       "description": "int(a / b) still rounds down."},
+      {"name": "test_tamper", "file": "reference/bug-003-pagination/test_tamper.diff", "expected_status": "validation_failed",
+       "description": "Changes the test's expectation to the buggy output."}
+    ]
+  },
+  {
+    "case_id": "bug-004-discount",
+    "repository_id": "bench-bug-004-discount",
+    "investigation_case": "bug-004-discount",
+    "repository_path": "benchmarks/bug_004_discount",
+    "expected_files": ["pricing.py"],
+    "expected_behaviour": "apply_discount returns the discounted price; invalid percentages still raise ValueError.",
+    "required_tests": ["test_ten_percent_discount", "test_order_total_with_discount"],
+    "reference_patches": [
+      {"name": "correct", "file": "reference/bug-004-discount/correct.diff", "expected_status": "verified",
+       "description": "Return the discounted value."},
+      {"name": "no_fix", "file": "reference/bug-004-discount/no_fix.diff", "expected_status": "rejected",
+       "description": "Uses the variable but still returns the original price."},
+      {"name": "syntax_error", "file": "reference/bug-004-discount/syntax_error.diff", "expected_status": "rejected",
+       "description": "An unbalanced parenthesis."}
+    ]
+  },
+  {
+    "case_id": "bug-005-config",
+    "repository_id": "bench-bug-005-config",
+    "investigation_case": "bug-005-config",
+    "repository_path": "benchmarks/bug_005_config",
+    "expected_files": ["config_loader.py"],
+    "expected_behaviour": "A missing PORT uses the default; a non-numeric or out-of-range PORT raises ConfigError.",
+    "required_tests": ["test_non_numeric_port_is_an_error", "test_out_of_range_port_is_an_error"],
+    "reference_patches": [
+      {"name": "correct", "file": "reference/bug-005-config/correct.diff", "expected_status": "verified",
+       "description": "Only a missing PORT falls back to the default."},
+      {"name": "regression", "file": "reference/bug-005-config/regression.diff", "expected_status": "rejected",
+       "description": "Invalid values raise, but a missing PORT now crashes."},
+      {"name": "out_of_scope", "file": "reference/bug-005-config/out_of_scope.diff", "expected_status": "validation_failed",
+       "description": "Also writes a .env file."}
+    ]
+  }
+]

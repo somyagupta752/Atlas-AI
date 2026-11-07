@@ -47,6 +47,7 @@ from app.knowledge_graph.service import (
     GraphService,
     RepositoryIdConflictError,
 )
+from app.patching.routes import router as patching_router
 from app.repository import BenchmarkExecutionRepository
 from app.retrieval.embeddings import (
     EmbeddingConfigurationError,
@@ -130,6 +131,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Atlas AI", lifespan=lifespan)
 app.middleware("http")(limit_debug_request_size)
 app.include_router(debugging_router)
+app.include_router(patching_router)
 
 
 @app.exception_handler(GraphStoreError)

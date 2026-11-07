@@ -63,6 +63,26 @@ class Settings(BaseSettings):
     # code execution, not a sandbox: list trusted repositories only.
     agent_trusted_test_roots: list[Path] = []
 
+    # Patch generation and verification (Task 13). Patches are verified only in
+    # repositories under AGENT_TRUSTED_TEST_ROOTS: verification runs their tests.
+    patch_max_attempts: int = Field(default=3, ge=1, le=10)
+    # Verification time (baseline and checks) per request. LLM latency is bounded
+    # separately by PATCH_LLM_TIMEOUT_SECONDS per attempt.
+    patch_max_total_seconds: float = Field(default=180.0, gt=0, le=3600)
+    patch_max_files: int = Field(default=5, ge=1, le=50)
+    patch_max_changed_lines: int = Field(default=500, ge=1, le=10_000)
+    patch_max_check_output_bytes: int = Field(default=100_000, ge=1_000, le=10_000_000)
+    patch_check_timeout_seconds: float = Field(default=60.0, gt=0, le=600)
+    patch_llm_timeout_seconds: float = Field(default=120.0, gt=0, le=600)
+    patch_baseline_runs: int = Field(default=2, ge=1, le=5)
+    patch_timeout_policy: Literal["reject", "inconclusive"] = "reject"
+    patch_require_ruff: bool = True
+    # Where isolated workspaces are created. Default: <system temp>/atlas-ai/patch-workspaces.
+    patch_workspace_dir: Path | None = None
+    # delete: always remove; keep_failed: keep non-verified attempts for inspection; keep: never remove.
+    patch_workspace_retention: Literal["delete", "keep_failed", "keep"] = "delete"
+    patch_workspace_max_age_hours: float = Field(default=24.0, gt=0)
+
 
 def get_settings() -> Settings:
     return Settings()

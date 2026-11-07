@@ -1,0 +1,97 @@
+[
+  {
+    "investigation_case": "bug-001-average",
+    "bug_report": "The average calculation crashes when the input list is empty. I expected calculate_average([]) to return 0.0.",
+    "diagnosis": {
+      "summary": "calculate_average divides sum(numbers) by len(numbers) with no check for an empty list.",
+      "root_cause": "For an empty list len(numbers) is 0, so the division raises ZeroDivisionError.",
+      "confidence": 0.9,
+      "affected_files": ["solution.py", "test_solution.py"],
+      "suggested_fix": "Handle the empty list before dividing.",
+      "evidence": [
+        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "solution.py",
+         "qualified_name": "calculate_average", "start_line": 1, "end_line": 2,
+         "observation": "return sum(numbers) / len(numbers) has no empty-input check."},
+        {"id": "E2", "source_type": "execution", "observation_ids": ["obs-2"], "file_path": "test_solution.py",
+         "observation": "test_average_of_empty_list fails with ZeroDivisionError."}
+      ],
+      "tests_run": [{"observation_id": "obs-2", "test_path": "test_solution.py", "exit_code": 1,
+                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+    }
+  },
+  {
+    "investigation_case": "bug-002-missing-record",
+    "bug_report": "When I call GET /users/999 for a user that does not exist, the API returns a 500 error. I expected a 404 response.",
+    "diagnosis": {
+      "summary": "get_user_profile reads user.id on the None that UserService.get_user returns for a missing user.",
+      "root_cause": "UserRepository.find_by_id returns None for a missing user; get_user_profile dereferences it, and the broad except turns the AttributeError into a 500.",
+      "confidence": 0.9,
+      "affected_files": ["users_api/routes.py", "users_api/service.py", "users_api/repository.py", "tests/test_routes.py"],
+      "suggested_fix": "Return a 404 response when no user is found.",
+      "evidence": [
+        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "users_api/routes.py",
+         "qualified_name": "get_user_profile", "start_line": 4, "end_line": 10,
+         "observation": "user.id is read without a None check inside a broad try/except."},
+        {"id": "E2", "source_type": "source_code", "observation_ids": ["obs-2"], "file_path": "users_api/repository.py",
+         "qualified_name": "UserRepository.find_by_id", "start_line": 14, "end_line": 16,
+         "observation": "find_by_id returns None when no record exists."}
+      ],
+      "tests_run": [{"observation_id": "obs-3", "test_path": "tests/test_routes.py", "exit_code": 1,
+                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+    }
+  },
+  {
+    "investigation_case": "bug-003-pagination",
+    "bug_report": "The last page of results is missing. With 5 items and 2 per page, page 3 should show the 5th item, but it is empty.",
+    "diagnosis": {
+      "summary": "total_pages uses floor division, so a partial last page is not counted.",
+      "root_cause": "total_pages returns item_count // per_page, which rounds down; paginate then treats the partial last page as beyond the end.",
+      "confidence": 0.9,
+      "affected_files": ["pagination.py", "test_pagination.py"],
+      "suggested_fix": "Round the page count up.",
+      "evidence": [
+        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "pagination.py",
+         "qualified_name": "total_pages", "start_line": 1, "end_line": 2,
+         "observation": "return item_count // per_page rounds down."}
+      ],
+      "tests_run": [{"observation_id": "obs-2", "test_path": "test_pagination.py", "exit_code": 1,
+                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+    }
+  },
+  {
+    "investigation_case": "bug-004-discount",
+    "bug_report": "Discounts are not applied: a 10% discount on a 100.00 item still charges 100.00, and order totals ignore the discount.",
+    "diagnosis": {
+      "summary": "apply_discount computes the discounted price but returns the original price.",
+      "root_cause": "apply_discount assigns the discounted value to a local variable and then returns round(price, 2) instead.",
+      "confidence": 0.95,
+      "affected_files": ["pricing.py", "test_pricing.py"],
+      "suggested_fix": "Return the discounted value.",
+      "evidence": [
+        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "pricing.py",
+         "qualified_name": "apply_discount", "start_line": 5, "end_line": 6,
+         "observation": "discounted is computed and never used; the original price is returned."}
+      ],
+      "tests_run": [{"observation_id": "obs-2", "test_path": "test_pricing.py", "exit_code": 1,
+                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+    }
+  },
+  {
+    "investigation_case": "bug-005-config",
+    "bug_report": "Starting the service with PORT=abc silently listens on 8080. An invalid PORT should fail with a ConfigError so the misconfiguration is visible.",
+    "diagnosis": {
+      "summary": "load_port catches every exception and returns the default port.",
+      "root_cause": "A broad except Exception swallows the ValueError from int() and the ConfigError for out-of-range ports; only a missing PORT (KeyError) should fall back to the default.",
+      "confidence": 0.9,
+      "affected_files": ["config_loader.py", "test_config_loader.py"],
+      "suggested_fix": "Catch only KeyError for the default and raise ConfigError for invalid values.",
+      "evidence": [
+        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "config_loader.py",
+         "qualified_name": "load_port", "start_line": 10, "end_line": 16,
+         "observation": "except Exception: return DEFAULT_PORT hides every error."}
+      ],
+      "tests_run": [{"observation_id": "obs-2", "test_path": "test_config_loader.py", "exit_code": 1,
+                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+    }
+  }
+]

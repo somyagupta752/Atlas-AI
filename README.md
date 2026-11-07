@@ -347,3 +347,121 @@ Success rate 5/5, mean 3.8 tool calls and 4.4 iterations, mean 26 s, $0.51 in to
 - Five small, single-bug repositories check the agent's mechanics. They do not show how it does on real repositories.
 - The agent never sees the retrieval index's freshness. If the files changed after indexing, retrieval can show old lines while `read_file` shows new ones.
 - A timed-out in-process tool keeps running in its worker thread until it reaches its own deadline. Python cannot stop a thread.
+
+## Patch generation and verification
+
+`app/patching/` turns a completed investigation into a proposed fix and checks the fix in a disposable copy of the repository. A patch is only a proposal. It is `verified` only when every mandatory check passes. The original repository is never written, and nothing is committed or pushed. A human decides whether to accept the patch.
+
+```
+investigation -> baseline copy -> select tests -> baseline run
+  -> [generate -> validate -> fresh copy -> git apply -> verify -> persist] x max_attempts
+  -> report
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `models.py` | Lifecycle statuses and transitions, limits, proposal, validation, check, comparison and execution models. |
+| `generator.py` | One proposal from the Task 12 `LLMProvider` through a `submit_patch` tool. It never writes or runs anything. |
+| `diff_parser.py` | Strict unified-diff parser, context anchoring and the canonical renderer. |
+| `validator.py` | Path, scope, content and size rules. Only a valid diff yields a `ValidatedPatch`. |
+| `workspace.py` | Isolated copies, snapshot hashes, ownership markers and retention. |
+| `applier.py` | `git apply` with application-built arguments, conflict and unexpected-change detection. |
+| `test_execution.py` | Pytest and ruff commands, the child environment and JUnit XML parsing. |
+| `test_selector.py` | Deterministic test selection, with a reason for each test. |
+| `verification.py` | The baseline, the checks and the verdict. |
+| `comparison.py` | Per-test before-and-after classification. |
+| `service.py` | `PatchingService.generate_and_verify_patch(investigation_id)`. It orchestrates and has no HTTP. |
+| `repository.py` | PostgreSQL persistence of attempts and verifications. |
+| `routes.py` | The patch endpoints. |
+| `evaluation.py` | Benchmark scoring. |
+
+### Statuses
+
+A proposal moves `generated -> validated -> applied -> verifying -> verified | rejected | inconclusive | failed`. A proposal that fails validation ends as `validation_failed` and is never applied. A proposal that does not apply, or that repeats an earlier attempt, ends as `rejected` straight from `validated`. Every other transition is refused, both in memory and in the repository.
+
+- `verified`: the bug test failed in the baseline and passes now, no passing test broke, and every required check passed.
+- `rejected`: a required check failed. Examples: the bug test still fails, a regression, a syntax error, a new lint violation, a conflict, or a hang when the baseline completed.
+- `inconclusive`: correctness could not be established. Examples: the baseline did not reproduce the bug, a bug test was flaky, a tool was unavailable, or the time budget ran out.
+- `failed`: an internal error, or the original repository changed during verification.
+
+A skipped or unavailable check never counts as a pass.
+
+### Checks
+
+| Check | Rule |
+| --- | --- |
+| `patch_application` | `git apply --check`, then the apply. Git's `--numstat` must agree with the parser. No file outside the patch may change. |
+| `syntax_check` | Modified Python files parse with `ast`. Nothing executes. |
+| `original_bug_test` | Every test that failed in the baseline, among the tests the investigation saw fail, passes. |
+| `regression_tests` | No targeted test goes from passing to failing or skipped, and no new test fails. |
+| `ruff` | No new violations. Violations that existed before the patch are not blamed on it. |
+| `full_test_suite` | The same comparison over the whole suite, when requested. |
+| `original_repository_unchanged` | The original tree hashes the same as at the start. |
+
+The baseline runs twice (`PATCH_BASELINE_RUNS`). Tests whose outcome differs between the runs are flaky and are left out of the comparison. A flaky bug test makes the result inconclusive. If the baseline does not reproduce the bug, the execution stops before it calls the model.
+
+### Safety
+
+- Paths must be relative and use `/`. These are rejected: `..`, absolute paths, drive letters, backslashes, `.git`, `.env`, credential files, virtualenvs, caches, build output and any path through a symlink.
+- Only the investigation's affected source files may be modified. Tests are read-only (`allow_test_changes=False`). Only `.py` and `.pyi` files can change. New files, deleted files, renames, mode changes and binary patches are rejected.
+- The limits are: 5 files, 500 changed lines, a 200 KB diff, 1 MB per file, 3 attempts, 180 s of verification time and 100 KB of output per check. Each value is configurable.
+- `git apply` receives the validator's canonical rendering, not the model's text. If a hunk has no leading or trailing context, git anchors it to the start or end of the file. The validator therefore finds each hunk in the real source and adds context lines from it. The validator recomputes hunk counts.
+- Test and lint commands are built by the application. Their target paths are validated first. The model and the client never choose a command.
+- Child processes run in the workspace with a minimal environment: no API keys, and HOME and TMPDIR inside the workspace. Each child runs in its own process group, which is killed on timeout. On POSIX each child also has CPU, memory, file-size and open-file limits. Output is capped.
+- Source, tests and test output are treated as data in the prompt, and secrets are redacted.
+
+### Endpoints
+
+| Method | Path | Result |
+| --- | --- | --- |
+| POST | `/debug/investigations/{id}/patches` | Body `{"max_attempts": 3, "run_full_test_suite": true}`. Generates and verifies a patch. Returns the final status, diff, per-check status and every attempt. |
+| GET | `/debug/investigations/{id}/patches` | Every attempt, in order. |
+| GET | `/debug/patches/{patch_id}` | The proposal, diff, validation result, status history and a verification summary. |
+| GET | `/debug/patches/{patch_id}/verification` | Every check with its output, and the baseline and patched results with their comparison. |
+
+The endpoints use the stored investigation. A client cannot send a diagnosis. Only `completed` investigations are eligible (409 otherwise). The repository must be indexed (404), inside `ALLOWED_REPOSITORY_ROOTS` and inside `AGENT_TRUSTED_TEST_ROOTS`, because verification runs its tests (403). `?repository_id=` and the body field `repository_id` return 404 for another repository's data.
+
+`verified`, `rejected`, `inconclusive` and `validation_failed` return 200. A `failed` execution returns 504 for an LLM timeout, 503 for rate limits or a workspace failure, 502 for provider errors or an invalid proposal, and 500 for internal or database errors. The request runs synchronously. `PATCH_LLM_TIMEOUT_SECONDS` bounds each attempt's model call. `PATCH_MAX_TOTAL_SECONDS` bounds the time spent in baseline and checks.
+
+### Persistence
+
+Migration `9e4b7c2d1a3f` creates `patch_proposals` and `patch_verifications`. Run `uv run alembic upgrade head`.
+
+- Each attempt is committed when it is generated, and failed attempts are never overwritten. `execution_id` groups the attempts of one request.
+- Each status change is checked, appended to `status_history` and committed.
+- A verification row and its proposal's final status are written in one transaction.
+- `provenance` records the provider, model, prompt version, usage and the source snapshot hash. `environment` records the interpreter, the tool versions, the test command and the timeout policy.
+
+### Benchmark
+
+`benchmarks/patching/cases.json` reuses the five Task 12 bugs. The model's input is `diagnoses.json` (the recorded diagnoses) and the source code. The expected files, the required tests and the reference patches stay in `cases.json`.
+
+```bash
+uv run python benchmarks/patching/evaluate.py                 # reference patches: free, no LLM, no database
+uv run python benchmarks/patching/evaluate.py --mode live     # real model; costs money
+uv run python benchmarks/patching/evaluate.py --mode live --diagnosis agent   # run Task 12 first
+```
+
+Reference mode sends 16 fixed patches through the full pipeline: 5 correct, 3 that do not fix the bug, 3 that break other tests, 2 with syntax errors, 2 that weaken a test and 1 that writes `.env`. Each one gets its expected verdict, and the benchmark repositories stay unchanged. `tests/patching/test_benchmark_cases.py` runs the same checks in the test suite.
+
+Metrics: patch generation, validation and application rates, bug-fix rate (the case's required tests pass), regression-free rate, verified rate, success rate, mean attempts, cost and latency. Success means verified, with the required tests passing and only expected files modified. A green suite alone is not success: one regression reference makes the bug test pass and is still rejected.
+
+Results on 2026-11-08 with `claude-opus-5-5`, effort `high`, recorded diagnoses (`--mode live --max-cost-usd 2`):
+
+| Case | Status | Attempts | Lines | Time | Cost |
+| --- | --- | --- | --- | --- | --- |
+| bug-001-average | verified | 1 | +2/-0 | 8.0 s | $0.025 |
+| bug-002-missing-record | verified | 1 | +2/-0 | 6.9 s | $0.027 |
+| bug-003-pagination | verified | 1 | +1/-1 | 5.1 s | $0.021 |
+| bug-004-discount | verified | 1 | +1/-1 | 5.3 s | $0.021 |
+| bug-005-config | verified | 1 | +7/-5 | 8.1 s | $0.029 |
+
+Verified rate 5/5. Every patch changed only the diagnosed file, and none touched a test. Mean 6.7 s, $0.12 in total. No diff needed context anchoring.
+
+### Known limitations
+
+- A temporary directory is not a sandbox. Test code runs as this user and can reach the network and the rest of the filesystem. Only verify trusted repositories (`AGENT_TRUSTED_TEST_ROOTS`). Untrusted repositories need container workers with no network.
+- `RLIMIT_AS` (memory) is not enforced on macOS.
+- Only Python source files can be patched, and only test files named `test_*.py` or `*_test.py` are selected.
+- Test selection follows imports one hop. It does not use the Neo4j graph yet.
+- The live results below use recorded diagnoses on five small, single-bug repositories. They show that the pipeline works with a real model. They are not a measure of patch quality on real code.

@@ -1,0 +1,7 @@
+--- a/pricing.py
++++ b/pricing.py
+@@ -4,3 +4,3 @@
+         raise ValueError("percent must be between 0 and 100")
+     discounted = round(price * (1 - percent / 100), 2)
+-    return round(price, 2)
++    return discounted

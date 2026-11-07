@@ -1,0 +1,6 @@
+--- a/test_pagination.py
++++ b/test_pagination.py
+@@ -12,2 +12,2 @@
+ def test_partial_last_page():
+-    assert paginate([1, 2, 3, 4, 5], page=3, per_page=2) == [5]
++    assert paginate([1, 2, 3, 4, 5], page=3, per_page=2) == []

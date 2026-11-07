@@ -1,0 +1,9 @@
+--- a/users_api/routes.py
++++ b/users_api/routes.py
+@@ -6,5 +6,5 @@
+     try:
+         user = service.get_user(user_id)
+-        return 200, {"id": user.id, "email": user.email}
++        return 404, {"error": "user not found"}
+     except Exception:
+         return 500, {"error": "internal server error"}
