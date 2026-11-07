@@ -37,6 +37,32 @@ class Settings(BaseSettings):
     # Send a "dimensions" field (OpenAI text-embedding-3 models accept it).
     embedding_send_dimensions: bool = False
 
+    # LLM for the debugging agent. The investigation endpoints return 503 while unset.
+    llm_provider: Literal["anthropic", "disabled"] = "anthropic"
+    # Read from ANTHROPIC_API_KEY. Never logged, never returned.
+    anthropic_api_key: SecretStr | None = None
+    llm_model: str = "claude-opus-5-5"
+    llm_effort: Literal["low", "medium", "high", "xhigh", "max"] = "high"
+    llm_max_tokens: int = Field(default=16000, ge=1024, le=64000)
+    llm_timeout_seconds: float = Field(default=60.0, gt=0)
+    llm_connect_timeout_seconds: float = Field(default=10.0, gt=0)
+    llm_max_retries: int = Field(default=2, ge=0, le=5)
+    # Re-run a request declined by a safety classifier on a recommended fallback model.
+    llm_server_fallbacks: bool = True
+    # The agent sends repository source code to the LLM provider. Refused while false.
+    llm_allow_external: bool = False
+
+    # Debugging agent limits. Starting values, not universal constants.
+    agent_max_iterations: int = Field(default=12, ge=1, le=100)
+    agent_max_tool_calls: int = Field(default=20, ge=1, le=200)
+    agent_tool_timeout_seconds: float = Field(default=15.0, gt=0, le=300)
+    agent_max_tool_output_bytes: int = Field(default=20_000, ge=1_000, le=1_000_000)
+    agent_max_duration_seconds: float = Field(default=120.0, gt=0, le=3600)
+    # Repositories under these directories may have their tests run by the agent.
+    # Fails closed: empty means run_tests refuses every request. Running tests is
+    # code execution, not a sandbox: list trusted repositories only.
+    agent_trusted_test_roots: list[Path] = []
+
 
 def get_settings() -> Settings:
     return Settings()

@@ -9,6 +9,10 @@ from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.agents.llm import LLMConfigurationError, create_llm_provider
+from app.agents.routes import limit_debug_request_size
+from app.agents.routes import router as debugging_router
+from app.agents.tool_registry import create_default_registry
 from app.benchmark import BenchmarkExecutionResult, run_benchmark
 from app.benchmark_registry import get_benchmark
 from app.code_intelligence import (
@@ -19,6 +23,11 @@ from app.code_intelligence import (
 from app.code_intelligence.schemas import RepositoryAnalysis
 from app.config import get_settings
 from app.database import get_db
+from app.dependencies import (
+    get_allowed_repository_roots,
+    get_embedding_provider_optional,
+    get_graph_context_source,
+)
 from app.knowledge_graph.models import REPOSITORY_ID_PATTERN, CodeGraph
 from app.knowledge_graph.neo4j_client import (
     Neo4jConfig,
@@ -83,6 +92,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.graph_repository = None
     settings = get_settings()
     app.state.embedding_provider = None
+    app.state.tool_registry = create_default_registry()
+    app.state.llm_provider = None
+    try:
+        app.state.llm_provider = create_llm_provider(settings)
+    except LLMConfigurationError as exc:
+        # Investigation endpoints return 503; everything else keeps working.
+        logger.warning("Debugging agent LLM not available: %s", exc)
     try:
         app.state.embedding_provider = create_embedding_provider(settings)
     except EmbeddingConfigurationError as exc:
@@ -112,6 +128,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Atlas AI", lifespan=lifespan)
+app.middleware("http")(limit_debug_request_size)
+app.include_router(debugging_router)
 
 
 @app.exception_handler(GraphStoreError)
@@ -147,11 +165,6 @@ def list_benchmark_runs(
     if get_benchmark(case_id) is None:
         raise HTTPException(status_code=404, detail=f"Unknown benchmark: {case_id}")
     return BenchmarkExecutionRepository(db).list_by_case(case_id, limit=limit)
-
-
-def get_allowed_repository_roots() -> list[Path]:
-    """Dependency: directories the analyzer may read. Empty means analysis is disabled."""
-    return get_settings().allowed_repository_roots
 
 
 def is_within_allowed_roots(target: Path, allowed_roots: list[Path]) -> bool:
@@ -266,16 +279,6 @@ def delete_repository_graph(
 
 
 # --- code retrieval -----------------------------------------------------------
-
-
-def get_embedding_provider_optional(request: Request) -> EmbeddingProvider | None:
-    return getattr(request.app.state, "embedding_provider", None)
-
-
-def get_graph_context_source(request: Request) -> GraphContextSource | None:
-    """The graph store, when it supports retrieval reads. None disables graph retrieval."""
-    repository = getattr(request.app.state, "graph_repository", None)
-    return repository if hasattr(repository, "expand_neighborhood") else None
 
 
 def get_repository_indexer(

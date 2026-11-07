@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "bug-001-average",
+    "category": "division_by_zero",
+    "repository_id": "bench-bug-001-average",
+    "repository_path": "benchmarks/bug_001_average",
+    "bug_report": "The average calculation crashes when the input list is empty. I expected calculate_average([]) to return 0.0.",
+    "expected_root_cause": "calculate_average divides sum(numbers) by len(numbers) without handling an empty list, so len() is 0 and a ZeroDivisionError is raised.",
+    "root_cause_keywords": [["divi", "zero", "zerodivisionerror"], ["empty", "len"]],
+    "expected_files": ["solution.py", "test_solution.py"],
+    "expected_symbols": ["calculate_average"],
+    "required_evidence": ["source_code:solution.py", "execution:ZeroDivisionError"]
+  },
+  {
+    "case_id": "bug-002-missing-record",
+    "category": "missing_record",
+    "repository_id": "bench-bug-002-missing-record",
+    "repository_path": "benchmarks/bug_002_missing_record",
+    "bug_report": "When I call GET /users/999 for a user that does not exist, the API returns a 500 error. I expected a 404 response.",
+    "expected_root_cause": "UserRepository.find_by_id returns None for a missing user, UserService.get_user passes it through, and get_user_profile reads user.id without checking for None. The AttributeError is caught by the broad except and turned into a 500.",
+    "root_cause_keywords": [["none"], ["get_user_profile", "route", "attribute", "user.id", "user.email"]],
+    "expected_files": ["users_api/routes.py", "users_api/service.py", "users_api/repository.py", "tests/test_routes.py"],
+    "expected_symbols": ["get_user_profile", "UserService.get_user", "UserRepository.find_by_id"],
+    "required_evidence": ["source_code:users_api/routes.py", "source_code:users_api/repository.py"]
+  },
+  {
+    "case_id": "bug-003-pagination",
+    "category": "boundary_condition",
+    "repository_id": "bench-bug-003-pagination",
+    "repository_path": "benchmarks/bug_003_pagination",
+    "bug_report": "The last page of results is missing. With 5 items and 2 per page, page 3 should show the 5th item, but it is empty.",
+    "expected_root_cause": "total_pages uses floor division (item_count // per_page), so a partial last page is not counted and paginate treats page 3 as beyond the end. It should round up.",
+    "root_cause_keywords": [["total_pages", "floor", "//", "round", "ceil"]],
+    "expected_files": ["pagination.py", "test_pagination.py"],
+    "expected_symbols": ["total_pages", "paginate"],
+    "required_evidence": ["source_code:pagination.py", "execution:test_partial_last_page"]
+  },
+  {
+    "case_id": "bug-004-discount",
+    "category": "incorrect_return_value",
+    "repository_id": "bench-bug-004-discount",
+    "repository_path": "benchmarks/bug_004_discount",
+    "bug_report": "Discounts are not applied: a 10% discount on a 100.00 item still charges 100.00, and order totals ignore the discount.",
+    "expected_root_cause": "apply_discount computes the discounted price into a local variable but returns the original price instead.",
+    "root_cause_keywords": [["return"], ["discounted", "original price", "price instead"]],
+    "expected_files": ["pricing.py", "test_pricing.py"],
+    "expected_symbols": ["apply_discount"],
+    "required_evidence": ["source_code:pricing.py", "execution:test_ten_percent_discount"]
+  },
+  {
+    "case_id": "bug-005-config",
+    "category": "exception_handling",
+    "repository_id": "bench-bug-005-config",
+    "repository_path": "benchmarks/bug_005_config",
+    "bug_report": "Starting the service with PORT=abc silently listens on 8080. An invalid PORT should fail with a ConfigError so the misconfiguration is visible.",
+    "expected_root_cause": "load_port wraps parsing in a broad except Exception that returns DEFAULT_PORT, which swallows the ValueError from int() and its own ConfigError for out-of-range ports. Only a missing PORT (KeyError) should fall back to the default.",
+    "root_cause_keywords": [["except", "exception"], ["swallow", "broad", "catch", "default", "keyerror"]],
+    "expected_files": ["config_loader.py", "test_config_loader.py"],
+    "expected_symbols": ["load_port"],
+    "required_evidence": ["source_code:config_loader.py", "execution:ConfigError"]
+  }
+]

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
+    "anthropic>=2.6.0",
     "fastapi>=0.162.0",
     "httpx>=0.28.1",
     "neo4j>=6.4.1",
@@ -26,6 +27,10 @@ dev = [
 pythonpath = ["."]
 testpaths = ["tests"]
 markers = ["neo4j: needs a running Neo4j (docker compose up -d neo4j)"]
+
+[tool.ruff]
+# Deliberately buggy benchmark repositories. A lint hint there would leak the answer.
+extend-exclude = ["benchmarks/bug_*"]
 
 [tool.ruff.lint.flake8-bugbear]
 # FastAPI's Depends()/Query() in argument defaults is the framework's DI pattern.

@@ -80,3 +80,30 @@ def index_repo(write_repo, chunk_repo):
         return indexer.index_repository(repository_id, root), root
 
     return index
+
+
+BENCHMARKS_DIR = __import__("pathlib").Path(__file__).resolve().parent.parent / "benchmarks"
+
+
+@pytest.fixture
+def bench_repo(tmp_path):
+    """Copy a benchmark bug repository into a temporary directory and return its root."""
+    import shutil
+
+    def copy(name: str):
+        target = tmp_path / name
+        shutil.copytree(BENCHMARKS_DIR / name, target, ignore=shutil.ignore_patterns("__pycache__"))
+        return target.resolve()
+
+    return copy
+
+
+@pytest.fixture
+def make_context():
+    """Build a ToolContext for a repository root."""
+    from app.tools.base import ToolContext
+
+    def make(root, repository_id="demo", **kwargs):
+        return ToolContext(repository_id=repository_id, repository_root=root, **kwargs)
+
+    return make

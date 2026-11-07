@@ -174,3 +174,176 @@ These limit how far the results can be trusted. They are not defects in the desi
 - The benchmark numbers come from hashing embeddings. They test the retrieval pipeline, not a semantic embedding model. A real model can change the ranking a lot, so measure again before comparing strategies.
 - 19 cases about one repository work as a regression check. They do not show general retrieval quality. Add deliberately hard queries and other repositories before drawing conclusions.
 - Graph candidate selection does not tell production code from test code. In the `build-graph-dependencies` case, test functions that call `GraphService.build_graph` crowd out its production callees. Fix this in a later ranking change, not with a special case.
+
+
+## Debugging agent
+
+`app/agents/` investigates a reported bug. It calls read-only tools, records what they return, keeps competing hypotheses and returns a root-cause analysis that is checked against the evidence it collected. It never modifies files. The loop is our own code: no agent framework.
+
+| Module | Responsibility |
+| --- | --- |
+| `llm.py` | `LLMProvider` protocol, `LLMResponse`, the Anthropic adapter and `FakeLLM`. SDK objects never leave this module. |
+| `state.py` | `InvestigationState` and `Observation`. |
+| `schemas.py` | Limits, statuses, `Hypothesis`, `Evidence`, `DiagnosisDraft`, `RootCauseAnalysis`. |
+| `tool_registry.py` | Registration, duplicate rejection, schemas, argument validation. |
+| `tool_executor.py` | One untrusted tool call to one bounded `Observation`. |
+| `loop.py` | The agent loop and every stopping condition. |
+| `prompts.py` | The system prompt and the fixed follow-up messages. |
+| `hypotheses.py`, `evidence.py`, `diagnosis.py` | Validate the final answer against the observations. |
+| `investigator.py` | Loop, then diagnosis, repair and status. |
+| `agent.py` | `DebuggingAgent.investigate_bug(repository_id, bug_report)`. No HTTP. |
+| `repository.py` | PostgreSQL persistence of investigations and events. |
+| `routes.py` | The `/debug` endpoints. |
+| `evaluation.py` | Benchmark scoring. |
+
+### How a tool call moves
+
+1. The loop sends the conversation and the permitted tool schemas to the provider.
+2. The adapter turns the provider's response into an `LLMResponse` with `ToolCall`s.
+3. The loop appends the assistant turn, then executes each call in order.
+4. The executor checks the tool is permitted, validates the arguments, runs the tool with a time limit and bounds the output.
+5. The result becomes an `Observation` with an ID such as `obs-3`, and a tool message that answers the call ID.
+6. The adapter groups the tool messages into one `tool_result` turn, and the loop calls the model again.
+7. A response without tool calls is the final answer: a JSON diagnosis.
+
+### Tools
+
+| Tool | Reuses | Notes |
+| --- | --- | --- |
+| `retrieve_evidence` | Task 11 hybrid retrieval | Ranked chunks with provenance. Relevance is not proof. |
+| `search_code` | | Literal text search with file and line. |
+| `read_file` | | Numbered lines, at most 400 per call. |
+| `get_symbol` | Task 9 AST analysis | Definition, kind, range, parent class, parameters, source. |
+| `get_callers`, `get_callees` | Task 10 graph | Neo4j when it holds the repository, otherwise the same graph built in memory. Callees include unresolved calls. |
+| `run_tests` | Task 3 runner | A test path, never a command. |
+
+Tool security:
+
+- Paths must be relative. `..`, absolute paths and symlinks that resolve outside the root are refused.
+- Files that may hold secrets (`.env`, keys, `.netrc` and similar) are refused. Credentials in returned text are redacted.
+- `run_tests` accepts only `test_*.py` or `*_test.py`, plus an optional test name checked against a strict pattern. The command is fixed: `python -m pytest -q -p no:cacheprovider <path>`. It runs with a minimal environment (no API keys, no database URL), no bytecode writes and a hard timeout.
+- `run_tests` is refused unless the repository is under `AGENT_TRUSTED_TEST_ROOTS`.
+
+Running tests is still code execution. The runner is not a sandbox. Use trusted repositories only, until isolated workers exist.
+
+### Limits
+
+| Setting | Default | On reaching it |
+| --- | --- | --- |
+| `AGENT_MAX_ITERATIONS` | 12 | The last iteration is a final turn: tools are forbidden and the model must answer. |
+| `AGENT_MAX_TOOL_CALLS` | 20 | Extra calls are skipped, then a final turn. |
+| `AGENT_TOOL_TIMEOUT_SECONDS` | 15 | The call becomes a `timeout` observation. |
+| `AGENT_MAX_TOOL_OUTPUT_BYTES` | 20000 | Output is truncated. Evidence may cite only what the model saw. |
+| `AGENT_MAX_DURATION_SECONDS` | 120 | The loop stops with `limit_reached`. |
+
+A repeated identical call is answered from the earlier observation and is not run again. After more than 3 repeats, 3 responses in a row with only rejected or repeated calls, or 2 empty responses, the model gets a final turn. An answer from a final turn is reported as `limit_reached`, never as `completed`.
+
+### Diagnosis validation
+
+The final answer must be one JSON object (`DiagnosisDraft`). The application then checks:
+
+- Each evidence item cites observation IDs that exist and succeeded, from tools that match its type. For example, `execution` evidence must cite `run_tests`.
+- File paths and line ranges lie inside what those observations showed. A qualified name appears in them.
+- A `supported` hypothesis has supporting evidence. A `rejected` one has contradicting evidence.
+- `completed` needs a root cause and a supported hypothesis backed by source-code, test or execution evidence. `inconclusive` must have no root cause.
+- `affected_files` appear in the evidence. Confidence is a number from 0 to 1.
+
+`tests_run` is built from `run_tests` observations, never from the model's text. `fix_applied` is always `false`. An invalid answer gets one repair turn with the errors listed. If it is still invalid, the status is `failed` (or `limit_reached` after a limit), with no root cause.
+
+### Statuses
+
+| Status | Meaning |
+| --- | --- |
+| `running` | Stored before the loop starts. |
+| `completed` | A validated, evidence-backed diagnosis. |
+| `inconclusive` | The evidence was not sufficient. No root cause. |
+| `limit_reached` | A limit stopped the investigation. The evidence collected so far is kept. |
+| `failed` | LLM error, refusal, invalid diagnosis or internal error. |
+| `cancelled` | Stopped through a `CancellationToken`. |
+
+Terminal statuses cannot change.
+
+### Prompt injection
+
+Tool results and the bug report are data. The system prompt says so, and the bug report sits inside `<bug_report>` tags that it cannot close. The real defence is in code: the model can only call registered, permitted tools; every argument is validated; and no tool can write, run a command or reach the network.
+
+### LLM provider
+
+The adapter uses the official `anthropic` SDK, model `claude-opus-5-5` at effort `high`.
+
+- The key comes from `ANTHROPIC_API_KEY`. It is never logged or returned.
+- The agent sends repository code to Anthropic, so it is refused unless `LLM_ALLOW_EXTERNAL=true`.
+- Timeouts are explicit. The SDK retries 429, 5xx and connection errors with backoff and honours `retry-after`. After that, errors become `LLMTimeoutError`, `LLMRateLimitError`, `LLMProviderError` or `LLMConfigurationError`. Their messages contain the status and request ID only.
+- Prompt caching is on, because the system prompt and tool list are identical on every turn.
+- Server-side fallbacks (`fallbacks: "default"`) are on: a request declined by a safety classifier is retried on a recommended model. Turn them off with `LLM_SERVER_FALLBACKS=false`.
+
+Another provider needs only a new class with the same `generate` method.
+
+### Endpoints
+
+| Method | Path | Result |
+| --- | --- | --- |
+| POST | `/debug/investigate` | Body `{"repository_id": ..., "bug_report": ...}`. Returns the `RootCauseAnalysis`. |
+| GET | `/debug/investigations/{id}` | The stored investigation and its result. |
+| GET | `/debug/investigations/{id}/observations` | Model turns, tool calls and observations, in order. `?timeline=true` returns every event. |
+
+The repository must be indexed first (`POST /repositories/{id}/index`), because the index records its root path. That root must be inside `ALLOWED_REPOSITORY_ROOTS`. Both GET endpoints accept `?repository_id=`, which returns 404 for an investigation of another repository.
+
+Errors: 422 for an invalid ID or an empty or oversized bug report, 413 for a body over 64 KB, 404 for an unknown repository, 403 outside the allowed roots, 503 if the LLM is not configured. A failed investigation is still stored, and its response carries the `investigation_id`: 504 for an LLM timeout, 503 for rate limits, 502 for provider errors or an invalid diagnosis, 500 for an internal error. `limit_reached` and `inconclusive` return 200.
+
+The investigation runs synchronously inside the request, for up to `AGENT_MAX_DURATION_SECONDS`.
+
+### Persistence
+
+Migration `7d3a9c1e4b2f` creates `investigations` and `investigation_events`. Run `uv run alembic upgrade head`.
+
+- The investigation row is committed before the loop starts.
+- Each event is committed on its own, so a later failure keeps earlier events. `sequence` orders them.
+- Event payloads hold model text, tool arguments and tool output as the model saw it. They hold no credentials.
+
+### Tests
+
+Every agent test uses `FakeLLM`, a scripted provider. A test can state the exact tool sequence, and inject invalid tools, malformed answers, empty responses, repeats, provider errors and timeouts. No test calls a real model.
+
+### Benchmark
+
+`benchmarks/agent/cases.json` holds five deliberately constructed bugs, each in its own small repository under `benchmarks/`:
+
+| Case | Bug |
+| --- | --- |
+| `bug-001-average` | Division by zero on an empty list. |
+| `bug-002-missing-record` | A missing user gives `None`, the route reads its attributes, and a broad `except` turns it into a 500. |
+| `bug-003-pagination` | Floor division drops the partial last page. |
+| `bug-004-discount` | The discounted price is computed but the original is returned. |
+| `bug-005-config` | A broad `except` swallows an invalid `PORT` and returns the default. |
+
+Expected answers stay in `cases.json`. The agent receives only the bug report.
+
+```bash
+uv run python benchmarks/agent/evaluate.py --dry-run   # validate cases, index repositories; no LLM
+uv run python benchmarks/agent/evaluate.py             # real investigations; costs money
+```
+
+Metrics: root-cause accuracy (keyword groups), evidence precision (evidence pointing at expected files or symbols), evidence coverage (required evidence present), tool calls, iterations, latency and cost. A correct root cause without the required evidence is not a success.
+
+Add `--max-cost-usd N` to stop before a case when the amount spent plus twice the costliest case so far would pass `N`.
+
+Results on 2026-11-08 with `claude-opus-5-5`, effort `high`, `AGENT_MAX_DURATION_SECONDS=300`:
+
+| Case | Root cause | Evidence coverage | Evidence precision | Tool calls | Time | Cost |
+| --- | --- | --- | --- | --- | --- | --- |
+| bug-001-average | correct | 1.0 | 1.0 | 3 | 10 s | $0.03 |
+| bug-002-missing-record | correct | 1.0 | 1.0 | 5 | 35 s | $0.13 |
+| bug-003-pagination | correct | 1.0 | 1.0 | 3 | 25 s | $0.10 |
+| bug-004-discount | correct | 1.0 | 1.0 | 5 | 28 s | $0.12 |
+| bug-005-config | correct | 1.0 | 0.6 | 3 | 32 s | $0.13 |
+
+Success rate 5/5, mean 3.8 tool calls and 4.4 iterations, mean 26 s, $0.51 in total. Every case ran its test and cited the failure. These are five small, single-bug repositories, so read the numbers as a check that the agent works, not as general accuracy.
+
+### Known limitations
+
+- Root-cause accuracy uses keyword matching. It is deterministic but coarse. An LLM judge can replace it later.
+- Evidence precision counts an item without a file path as irrelevant. Execution evidence often has none, so bug-005 scores 0.6 although every item is relevant.
+- Five small, single-bug repositories check the agent's mechanics. They do not show how it does on real repositories.
+- The agent never sees the retrieval index's freshness. If the files changed after indexing, retrieval can show old lines while `read_file` shows new ones.
+- A timed-out in-process tool keeps running in its worker thread until it reaches its own deadline. Python cannot stop a thread.

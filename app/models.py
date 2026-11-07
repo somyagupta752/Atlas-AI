@@ -6,10 +6,12 @@ from sqlalchemy import (
     Computed,
     DateTime,
     Float,
+    ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
@@ -143,5 +145,51 @@ class CodeChunkRecord(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+# --- debugging agent ----------------------------------------------------------
+
+
+class InvestigationRecord(Base):
+    """One debugging investigation. ``result`` holds the full RootCauseAnalysis."""
+
+    __tablename__ = "investigations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    repository_id: Mapped[str] = mapped_column(String, index=True)
+    bug_report: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, index=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    root_cause: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class InvestigationEventRecord(Base):
+    """One step of an investigation's timeline. ``sequence`` orders events within it."""
+
+    __tablename__ = "investigation_events"
+    __table_args__ = (
+        UniqueConstraint("investigation_id", "sequence", name="uq_investigation_events_sequence"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    investigation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("investigations.id", ondelete="CASCADE"),
+        index=True,
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    event_type: Mapped[str] = mapped_column(String)
+    payload: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

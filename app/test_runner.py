@@ -1,5 +1,6 @@
 import subprocess
 import time
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -24,7 +25,18 @@ def _to_text(output: str | bytes | None) -> str:
     return output
 
 
-def run_tests(command: list[str], timeout: float) -> TestRunResult:
+def run_tests(
+    command: list[str],
+    timeout: float,
+    *,
+    cwd: str | Path | None = None,
+    env: dict[str, str] | None = None,
+) -> TestRunResult:
+    """Run ``command`` (an argument list, never a shell string) with a timeout.
+
+    ``env`` replaces the environment entirely when given, so callers can keep
+    secrets such as API keys out of the child process.
+    """
     start = time.monotonic()
     try:
         completed = subprocess.run(
@@ -32,6 +44,9 @@ def run_tests(command: list[str], timeout: float) -> TestRunResult:
             capture_output=True,
             text=True,
             timeout=timeout,
+            cwd=cwd,
+            env=env,
+            stdin=subprocess.DEVNULL,
             # Nonzero exit codes are data we classify, not errors to raise.
             check=False,
         )
