@@ -9,7 +9,7 @@
 #
 # Keep Python and pytest at the versions Atlas uses locally, so local and
 # container results are comparable.
-FROM python:3.12.13-slim-bookworm
+FROM python:3.15.0-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
