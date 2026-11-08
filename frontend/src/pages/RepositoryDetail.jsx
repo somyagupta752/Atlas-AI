@@ -4,6 +4,7 @@ import { api } from "../api";
 import { can, whyNot } from "../auth/roles";
 import { useLoad } from "../hooks";
 import { Async, Empty } from "../ui";
+import CodeGraph from "../CodeGraph";
 import { friendly, RoleBadge } from "./Repositories";
 
 // Every control is shown according to the caller's role, and an unavailable one says why. The server checks the role on
@@ -17,11 +18,16 @@ export default function RepositoryDetail() {
       <Async state={detail} what="repository">
         {(repo) => (
           <>
-            <h1>{repo.repository_id} <RoleBadge role={repo.role} /></h1>
+            <div className="page-head">
+              <div className="eyebrow">Repository</div>
+              <h1>{repo.repository_id} <RoleBadge role={repo.role} /></h1>
+              <p className="lede">Index it, explore its import graph, search its code and manage who can see it.</p>
+            </div>
             <details><summary>What your role allows</summary>
               <ul>{repo.capabilities.map((c) => <li key={c}>{c}</li>)}</ul>
             </details>
             <Index id={id} role={repo.role} />
+            <CodeGraph id={id} role={repo.role} />
             <Search id={id} role={repo.role} />
             {can(repo.role, "owner") && <Members id={id} />}
           </>
@@ -52,7 +58,7 @@ function Index({ id, role }) {
   return (
     <section>
       <h2>Index</h2>
-      <Async state={status} what="index status">
+      {!(status.error && !status.data && status.error.includes("No index")) && <Async state={status} what="index status">
         {(s) => (
           <dl className="facts">
             <dt>Status</dt><dd>{s.status} (version {s.index_version})</dd>
@@ -61,7 +67,7 @@ function Index({ id, role }) {
             {s.last_error && <><dt>Last error</dt><dd>{s.last_error}</dd></>}
           </dl>
         )}
-      </Async>
+      </Async>}
       {status.error && !status.data && <Empty>{status.error.includes("No index") ? "This repository has not been indexed yet." : null}</Empty>}
       <button onClick={reindex} disabled={state.busy || !!reason || !(status.data && status.data.root_path)}
         title={reason || undefined}>{state.busy ? "Indexing…" : "Re-index"}</button>

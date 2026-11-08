@@ -14,7 +14,11 @@ export default function Repositories() {
   const repositories = useLoad(() => api.repositories(), []);
   return (
     <>
-      <h1>Repositories</h1>
+      <div className="page-head">
+        <div className="eyebrow">Workspace</div>
+        <h1>Repositories</h1>
+        <p className="lede">Code you have indexed. Open one to explore its graph, search it or manage members.</p>
+      </div>
       <Async state={repositories} what="repositories" isEmpty={(d) => d.items.length === 0}
         empty="You have no repositories yet. Index one below: you become its owner.">
         {(d) => (
