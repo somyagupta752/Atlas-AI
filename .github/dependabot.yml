@@ -20,9 +20,19 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule: {interval: weekly}
+    # The Python minor version is pinned on purpose: the API image, the worker image (its tag names the version) and CI must
+    # match, and moving it needs a person, a new worker image and a full test run. Patch releases still arrive.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: docker
     directory: /frontend
     schedule: {interval: weekly}
   - package-ecosystem: docker
     directory: /docker
     schedule: {interval: weekly}
+    # The Python minor version is pinned on purpose: the API image, the worker image (its tag names the version) and CI must
+    # match, and moving it needs a person, a new worker image and a full test run. Patch releases still arrive.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
