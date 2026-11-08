@@ -128,7 +128,7 @@ Then set `AUTH_REGISTRATION_OPEN=false` in `deploy.env` once your users exist, a
 
 - The Docker proxy narrows the API calls, not their content. See `security-boundaries.md` and the comment in the
   compose file before putting untrusted code on this host.
-- The `backup` job does not alert by itself and does not copy files off the host.
+- The `backup` job does not alert by itself and does not copy files off the host. `scripts/offsite_backup.sh` and `deploy/alerts/atlas.rules.yml` cover both; set them up (`docs/operations.md`).
 - Neo4j Community has no online backup; recover the graph with `python -m app.ops.rebuild_graphs`.
 - Rate limiting is per API process and per client address; run one `api` replica, or enforce limits in the proxy.
 - None of this has been run end to end on a deployment host. Treat the first staging deployment as the test.

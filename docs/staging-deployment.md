@@ -34,7 +34,9 @@ Without the last gate, staging may run only repositories you wrote or trust full
 5. **Start.** `dc pull`, then `dc up -d`, then `dc ps` and `curl -fsS http://127.0.0.1:8080/ready`.
 6. **Operator.** Create the first operator with `python -m app.auth.admin create-admin`.
 7. **Smoke test** (below).
-8. **Backup and restore drill.** Take a backup, verify it, restore into a scratch database, compare table counts.
+8. **Backup and restore drill.** Take a backup, verify it, restore into a scratch database, compare table counts. Run
+   `scripts/offsite_backup.sh push` to a real destination and `check` from cron. Load `deploy/alerts/atlas.rules.yml` and trigger one
+   alert on purpose (for example stop `api`) to prove it reaches a person.
 9. **Upgrade and roll back drill.** Deploy a second tag, check `/ready`, roll back to the first.
 10. **Record** results in the table at the end.
 

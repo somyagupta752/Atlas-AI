@@ -31,7 +31,10 @@ upgrade and roll back are in `docs/deployment.md`. Backup and restore are in `do
 | `atlas_evaluation_runs_total{status="failed"}` | Any increase |
 
 Label values of `outcome` and `status` come from `app/core/metrics.py`: check the exact words there before writing rules.
-No alert rules ship with Atlas. You must create them.
+Starting rules are in `deploy/alerts/atlas.rules.yml` (load with `rule_files:` in Prometheus, route in Alertmanager). Tune the
+thresholds, especially `AtlasModelSpendHigh` (25 USD is only an example). Prometheus must scrape the api with the
+`metrics_token` and job name `atlas-api`, or change the `up{job=...}` rule. A test checks every metric name in the file exists,
+but the rules have **not** been loaded into a running Prometheus.
 
 ## Logs
 
@@ -74,6 +77,21 @@ Secrets are files in `SECRETS_DIR`. Replace the file, then `dc up -d --force-rec
 - `api` has `mem_limit: 2g` and `pids_limit: 512`. Raise them in the compose file if workflows are killed (exit code 137).
 - Disk: watch `pgdata`, `backups` and `WORKSPACE_HOST_DIR`. Workspaces are temporary.
 
+## Off-host backups
+
+The backup volume is on the same host as the database. Copy it elsewhere with `scripts/offsite_backup.sh` on the Docker host:
+
+1. Make the volume readable on the host, for example `docker volume inspect <project>_backups` for its mount point (root needed),
+   or copy files out with a one-shot container.
+2. `scripts/offsite_backup.sh push <backup-dir> <user@host:/path or mounted bucket path>` from cron after the daily backup.
+   It copies only finished, encrypted backups, verifies by checksum, refuses to run when no backup is under 26 hours old, and never
+   deletes at the destination (apply retention there).
+3. `scripts/offsite_backup.sh check <backup-dir>` exits 1 when the newest backup is older than 26 hours. Run it from cron and send
+   a failure to your pager or a dead-man's-switch service. This covers the backup-age alert that Prometheus cannot.
+4. Store `backup_encryption_key` somewhere other than the destination.
+
+The script is tested against local directories only. It has not been tried over SSH or against a real bucket.
+
 ## Maintenance
 
 - Backups: `dc exec backup python -m app.ops.backup backup`, then `verify`. See `docs/backup-recovery.md`.
@@ -82,5 +100,5 @@ Secrets are files in `SECRETS_DIR`. Replace the file, then `dc up -d --force-rec
 
 ## Known gaps
 
-No off-host backup copy, no alert rules, no mail retry queue, one api replica, and the whole stack has not yet run on a
+Off-host copy and alert rules exist but are untried on a real host; no mail retry queue, one api replica, and the whole stack has not yet run on a
 deployment host.

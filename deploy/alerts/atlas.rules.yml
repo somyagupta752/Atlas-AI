@@ -1,0 +1,75 @@
+# Prometheus alert rules for Atlas AI. Load them with `rule_files:` in your Prometheus configuration and route the alerts in
+# Alertmanager. They are starting points: tune the thresholds to your traffic. Metric names come from app/core/metrics.py and a
+# test checks that every name used here exists. Backup freshness is not a metric: use `scripts/offsite_backup.sh check`.
+groups:
+  - name: atlas-availability
+    rules:
+      - alert: AtlasApiDown
+        expr: up{job="atlas-api"} == 0
+        for: 3m
+        labels: {severity: page}
+        annotations:
+          summary: The Atlas API cannot be scraped
+          runbook: docs/troubleshooting.md#the-stack-will-not-start
+      - alert: AtlasHighServerErrorRate
+        expr: sum(rate(atlas_http_requests_total{status_class="5xx"}[5m])) / sum(rate(atlas_http_requests_total[5m])) > 0.05
+        for: 10m
+        labels: {severity: page}
+        annotations:
+          summary: More than 5% of API requests fail with a server error
+          runbook: docs/troubleshooting.md
+      - alert: AtlasSlowRequests
+        expr: histogram_quantile(0.95, sum by (le) (rate(atlas_http_request_duration_seconds_bucket[5m]))) > 5
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: The 95th percentile of API latency is above 5 seconds
+          runbook: docs/operations.md#capacity-and-limits
+  - name: atlas-email
+    rules:
+      - alert: AtlasEmailDeliveryFailing
+        expr: sum by (outcome) (increase(atlas_emails_total{outcome!="sent"}[30m])) > 0
+        for: 0m
+        labels: {severity: ticket}
+        annotations:
+          summary: Password-reset email is failing ({{ $labels.outcome }})
+          runbook: docs/troubleshooting.md#password-reset-email
+  - name: atlas-model
+    rules:
+      - alert: AtlasModelRequestsFailing
+        expr: sum(increase(atlas_llm_requests_total{outcome!="ok"}[15m])) / clamp_min(sum(increase(atlas_llm_requests_total[15m])), 1) > 0.2
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: More than 20% of model requests fail
+          runbook: docs/troubleshooting.md#repositories-indexing-investigations
+      - alert: AtlasModelSpendHigh
+        expr: sum(increase(atlas_llm_cost_usd_total[24h])) > 25
+        for: 0m
+        labels: {severity: ticket}
+        annotations:
+          summary: Model spend in the last 24 hours is above the 25 USD example threshold. Set your own budget.
+          runbook: docs/incident-response.md#runaway-model-spend
+  - name: atlas-workers
+    rules:
+      - alert: AtlasWorkerContainersLeaking
+        expr: increase(atlas_container_cleanup_failures_total[1h]) > 0
+        for: 0m
+        labels: {severity: page}
+        annotations:
+          summary: Worker containers could not be removed
+          runbook: docs/troubleshooting.md#patching-and-evaluations
+      - alert: AtlasWorkerTimeoutsRising
+        expr: sum(increase(atlas_worker_timeouts_total[1h])) > 5
+        for: 0m
+        labels: {severity: ticket}
+        annotations:
+          summary: Test runs are timing out
+          runbook: docs/troubleshooting.md#patching-and-evaluations
+      - alert: AtlasEvaluationFailed
+        expr: increase(atlas_evaluation_runs_total{status="failed"}[1h]) > 0
+        for: 0m
+        labels: {severity: ticket}
+        annotations:
+          summary: An evaluation run ended in failure
+          runbook: docs/troubleshooting.md#patching-and-evaluations
