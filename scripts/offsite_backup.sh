@@ -15,7 +15,7 @@ set -euo pipefail
 
 usage() { sed -n '2,12p' "$0"; exit 2; }
 cmd="${1:-}"; src="${2:-}"
-[ -n "$cmd" ] && [ -n "$src" ] || usage
+if [ -z "$cmd" ] || [ -z "$src" ]; then usage; fi
 [ -d "$src" ] || { echo "backup directory not found: $src" >&2; exit 1; }
 
 newest_ok() { # any finished backup younger than $1 minutes
