@@ -1,0 +1,7 @@
+--- a/checkout.py
++++ b/checkout.py
+@@ -5,3 +5,3 @@
+ def order_total(subtotal: float, region: str) -> float:
+     """Subtotal plus sales tax plus shipping, rounded to cents."""
+-    return round(subtotal * (1 + tax_rate(region)) + shipping_cost(region), 2)
++    return round(subtotal * (1 + tax_rate(region.lower())) + shipping_cost(region.upper()), 2)

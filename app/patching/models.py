@@ -95,6 +95,14 @@ class PatchLimits(BaseModel):
     max_check_output_bytes: int = Field(default=100_000, ge=1_000, le=10_000_000)
     check_timeout_seconds: float = Field(default=60.0, gt=0, le=600)
     llm_timeout_seconds: float = Field(default=120.0, gt=0, le=600)
+    # Global LLM budget across every attempt and repair call of one execution.
+    # 3 attempts x (1 call + 1 repair) = 6 requests at most by default.
+    max_llm_requests: int = Field(default=6, ge=1, le=100)
+    max_llm_seconds: float = Field(default=300.0, gt=0, le=7200)
+    # None disables the cost cap (library use only; the API always sets one).
+    max_llm_cost_usd: float | None = Field(default=1.0, gt=0, le=100)
+    # Worst-case output tokens per call when the provider does not declare its own limit.
+    llm_max_output_tokens: int = Field(default=16_000, ge=1, le=200_000)
     max_selected_test_files: int = Field(default=20, ge=1, le=500)
     # The targeted baseline runs this many times. Outcomes that differ are flaky
     # and are excluded from the comparison; a flaky bug test makes the run inconclusive.
@@ -107,6 +115,12 @@ class PatchLimits(BaseModel):
     allow_deleted_files: bool = False
     # Changing tests to make them pass hides bugs. Off unless a separately reviewed policy allows it.
     allow_test_changes: bool = False
+    # Graph-based test discovery (suggestions only; validated like any other source).
+    graph_test_discovery: bool = True
+    graph_max_depth: int = Field(default=3, ge=1, le=6)
+    max_graph_test_files: int = Field(default=10, ge=1, le=100)
+    # Build a graph from the current source when Neo4j is missing, unreachable or stale.
+    graph_in_memory_fallback: bool = True
     # When the baseline does not reproduce the bug, nothing can be verified. By
     # default the execution stops before spending money on generation.
     generate_when_baseline_unreproducible: bool = False
@@ -117,6 +131,9 @@ class PatchLimits(BaseModel):
     # Feedback sent to the next generation attempt.
     max_feedback_bytes: int = Field(default=12_000, ge=1_000, le=100_000)
     max_context_source_bytes: int = Field(default=80_000, ge=1_000, le=1_000_000)
+    # Test files whose contents are shown to the model. 0 = test-blind: the model sees only the
+    # modifiable source and learns test-encoded rules from failure feedback. Tests always run.
+    max_context_test_files: int = Field(default=5, ge=0, le=50)
 
     @classmethod
     def from_settings(cls, settings: Any) -> "PatchLimits":
@@ -128,6 +145,13 @@ class PatchLimits(BaseModel):
             max_check_output_bytes=settings.patch_max_check_output_bytes,
             check_timeout_seconds=settings.patch_check_timeout_seconds,
             llm_timeout_seconds=settings.patch_llm_timeout_seconds,
+            max_llm_requests=settings.patch_max_llm_requests,
+            max_llm_seconds=settings.patch_max_llm_seconds,
+            max_llm_cost_usd=settings.patch_max_llm_cost_usd,
+            llm_max_output_tokens=settings.llm_max_tokens,
+            graph_test_discovery=settings.patch_graph_test_discovery,
+            graph_max_depth=settings.patch_graph_max_depth,
+            max_graph_test_files=settings.patch_max_graph_test_files,
             baseline_runs=settings.patch_baseline_runs,
             timeout_policy=settings.patch_timeout_policy,
             require_ruff=settings.patch_require_ruff,
@@ -229,6 +253,8 @@ class TestCaseResult(BaseModel):
     outcome: TestOutcome
     message: str | None = None
     duration_seconds: float = 0.0
+    # "No module named 'x'" in the error: an environment problem unless x is part of the repository.
+    missing_module: str | None = None
 
 
 class TestSuiteRun(BaseModel):
@@ -365,6 +391,7 @@ class TestSelectionItem(BaseModel):
     bug_test_names: list[str] = Field(default_factory=list)
     reproduces_bug: bool = False
     priority: int = 0
+    score: float = 0.0  # ranking within a priority (graph suggestions); higher first
 
 
 class TestSelection(BaseModel):
@@ -374,6 +401,8 @@ class TestSelection(BaseModel):
     full_suite: bool = False
     truncated: bool = False
     warnings: list[str] = Field(default_factory=list)
+    # Graph discovery report: source (neo4j / in_memory / unavailable / disabled), seeds, suggestions, warnings.
+    graph: dict[str, Any] | None = None
 
     @property
     def targets(self) -> list[str]:
@@ -396,6 +425,10 @@ class PatchAttempt(BaseModel):
     verification: PatchVerificationResult | None = None
     failure_reason: str | None = None
     summary: str = ""
+    # Provenance of a retry: which earlier attempts' failures this attempt was given, and the
+    # exact reasons. Lets the record prove a revision responded to real failure output.
+    feedback_from: list[int] = Field(default_factory=list)
+    feedback_reasons: list[str] = Field(default_factory=list)
 
 
 class PatchExecution(BaseModel):
@@ -416,6 +449,8 @@ class PatchExecution(BaseModel):
     usage: LLMUsage = Field(default_factory=LLMUsage)
     # The original repository is never written. Recorded explicitly and checked after every attempt.
     original_repository_modified: bool = False
+    # Requests, model time and cost against the execution's global LLM budget, call by call.
+    llm_budget: dict[str, Any] | None = None
 
     @property
     def final_attempt(self) -> PatchAttempt | None:

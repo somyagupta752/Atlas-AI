@@ -366,13 +366,16 @@ investigation -> baseline copy -> select tests -> baseline run
 | `validator.py` | Path, scope, content and size rules. Only a valid diff yields a `ValidatedPatch`. |
 | `workspace.py` | Isolated copies, snapshot hashes, ownership markers and retention. |
 | `applier.py` | `git apply` with application-built arguments, conflict and unexpected-change detection. |
-| `test_execution.py` | Pytest and ruff commands, the child environment and JUnit XML parsing. |
+| `test_execution.py` | The `TestRunner` interface, the local pytest runner, ruff and JUnit XML parsing. |
+| `container.py` | The container test backend: one locked-down Docker container per pytest run. |
 | `test_selector.py` | Deterministic test selection, with a reason for each test. |
+| `graph_tests.py` | Test suggestions from the Task 10 code graph. |
 | `verification.py` | The baseline, the checks and the verdict. |
 | `comparison.py` | Per-test before-and-after classification. |
 | `service.py` | `PatchingService.generate_and_verify_patch(investigation_id)`. It orchestrates and has no HTTP. |
 | `repository.py` | PostgreSQL persistence of attempts and verifications. |
 | `routes.py` | The patch endpoints. |
+| `budget.py` | The global LLM budget: requests, model time and cost across every attempt. |
 | `evaluation.py` | Benchmark scoring. |
 
 ### Statuses
@@ -400,6 +403,28 @@ A skipped or unavailable check never counts as a pass.
 
 The baseline runs twice (`PATCH_BASELINE_RUNS`). Tests whose outcome differs between the runs are flaky and are left out of the comparison. A flaky bug test makes the result inconclusive. If the baseline does not reproduce the bug, the execution stops before it calls the model.
 
+### Test selection
+
+The selector takes tests from these sources, in priority order. It records every reason for each test.
+
+| Priority | Source |
+| --- | --- |
+| 0 | Tests the investigation ran that failed. These reproduce the bug. |
+| 1 | Other tests the investigation ran. |
+| 2 | Test files named in the diagnosis or cited as evidence. |
+| 3 | Test files that import an affected module or are named after it. Graph tests that call patchable code directly. |
+| 4 | Test files one import hop away. Graph tests two or more calls away. |
+| 5 | Other suggestions. |
+
+The graph only suggests tests. `select_tests(suggested=...)` validates graph suggestions like any other path. A graph suggestion never gets a priority better than 3, so it never outranks the investigation's own tests.
+
+1. Seeds are every function in the modifiable files, from the current source. A patch can only change those files.
+2. The traversal follows incoming `CALLS` edges ("who calls this?"), one hop per query, for up to 3 hops (`PATCH_GRAPH_MAX_DEPTH`). It passes through helpers such as `make_service()`. Constructor calls resolve to `__init__`.
+3. Test functions end a path. The score is 1.0 for symbols the diagnosis names and 0.6 for others. Each inferred edge multiplies it by 0.7, and each hop after the first by 0.6.
+4. Files are ranked by score, then by path, and cut to 10 (`PATCH_MAX_GRAPH_TEST_FILES`).
+
+Atlas uses Neo4j when it holds the repository and matches the current source. Every seed and every discovered test must have the same qualified name and line range in the baseline copy. If anything differs, the stored graph is stale, and Atlas discards the whole Neo4j result. When Neo4j is stale, unreachable or missing the repository, Atlas builds an in-memory graph of the current source with the same Task 10 builder. A graph failure never blocks verification. `test_selection.graph` in the execution records the graph source, seeds, suggestions and warnings.
+
 ### Safety
 
 - Paths must be relative and use `/`. These are rejected: `..`, absolute paths, drive letters, backslashes, `.git`, `.env`, credential files, virtualenvs, caches, build output and any path through a symlink.
@@ -409,6 +434,53 @@ The baseline runs twice (`PATCH_BASELINE_RUNS`). Tests whose outcome differs bet
 - Test and lint commands are built by the application. Their target paths are validated first. The model and the client never choose a command.
 - Child processes run in the workspace with a minimal environment: no API keys, and HOME and TMPDIR inside the workspace. Each child runs in its own process group, which is killed on timeout. On POSIX each child also has CPU, memory, file-size and open-file limits. Output is capped.
 - Source, tests and test output are treated as data in the prompt, and secrets are redacted.
+
+### Container backend
+
+`PATCH_TEST_BACKEND=container` runs every pytest invocation in its own disposable Docker container. Only the step that executes repository code moves into the container. Diff parsing, `git apply`, the `ast` syntax check and ruff only read code, so they stay on the host. The rest of the pipeline uses the same `TestRunner` interface (`run`, `available`, `identity`) and is unchanged.
+
+Build the image once. It holds Python 3.12.13 and pytest 9.2.0, the same versions as the local runner:
+
+```bash
+docker build -f docker/test-runner.Dockerfile -t atlas-ai-test-runner:py3.12.13-pytest9.2.0 docker
+```
+
+| Control | How |
+| --- | --- |
+| Disposable | A new container per run, with a random name and the label `atlas.patching=1`. It is always removed with `docker rm -f`. |
+| Non-root | `--user` is the host user, or 65534 if Atlas runs as root. Also `--cap-drop ALL` and `--security-opt no-new-privileges`. |
+| No network | `--network none`: no routes and no DNS. Only the loopback interface is up. |
+| Filesystem | `--read-only` root. The writable paths are the workspace copy at `/workspace`, an output folder for the JUnit report and a size-limited `/tmp` tmpfs. No other host path is mounted. |
+| Limits | `--cpus`, `--memory` with swap equal to memory, `--pids-limit`, and `nofile` and `fsize` ulimits. |
+| Timeout | Inside the container, coreutils `timeout` stops pytest, with SIGKILL after 5 s. Outside, a host deadline stops the CLI and `docker rm -f` kills the container and every process in it. Atlas reads Docker's `State.OOMKilled`, so a memory kill is reported as an error and a timeout as `timed_out`. |
+| Secrets | The container gets a fixed `KEY=VALUE` list (HOME, TMPDIR and Python flags) and never the host environment. The docker CLI gets only what it needs to reach the daemon. |
+| Results | Same command identity, same JUnit parsing and same statuses as the local runner. Each verification's `environment.test_backend` records the image ID and the controls. |
+
+If the backend is configured but the image or daemon is unavailable, the request is refused with 503. Atlas never falls back to local execution.
+
+The workspace folder (`PATCH_WORKSPACE_DIR`, by default the system temp folder) must be visible to the Docker daemon. On Docker Desktop, that means it must be inside a shared path in Settings, Resources, File sharing. If Docker cannot mount the workspace, the run fails closed: the baseline does not complete, and the result is `inconclusive`.
+
+Repositories outside `AGENT_TRUSTED_TEST_ROOTS` are allowed only when both of these hold: the backend is `container`, and `PATCH_CONTAINER_ALLOW_UNTRUSTED=true`. They must still be inside `ALLOWED_REPOSITORY_ROOTS`. In that mode, ruff runs with `--isolated`, because the repository's ruff configuration is untrusted input.
+
+`tests/patching/test_container.py` tests the isolation from inside the container. Its test files try to reach the network by IP and DNS, read a host secret and Atlas's own source, find the API key, write to the image, escalate privileges, start too many processes, exceed the memory limit and outlive a timeout. These tests skip without Docker; `REQUIRE_CONTAINER=1` makes a skip a failure. `evaluate.py --test-backend container` runs the reference benchmark this way, and all 16 verdicts match.
+
+### LLM budget
+
+Per-call timeouts do not bound the total, so each request also has a global LLM budget. The defaults are 6 model requests (`PATCH_MAX_LLM_REQUESTS`), 300 s of model time (`PATCH_MAX_LLM_SECONDS`) and $1.00 (`PATCH_MAX_LLM_COST_USD`). Repair calls count.
+
+1. Before each call, Atlas reserves one request, the call's timeout and its worst-case cost. The worst case is the estimated input tokens at the highest input rate plus the full `LLM_MAX_TOKENS` output. A call that might not fit is not made.
+2. Reserved amounts count as spent until the call ends, so concurrent calls cannot share the same remainder. A budget can have a parent, so one cap can cover several executions. `evaluate.py --max-cost-usd` uses one parent budget for the whole run.
+3. After the call, the reservation is released and the actual cost from the reported usage is charged. If the actual cost is above the estimate, the call is flagged with `cost_estimate_exceeded`. A failed call without usage stays charged at its reservation, because the provider may have billed it.
+
+The three stops are reported differently:
+
+| Situation | Result |
+| --- | --- |
+| The budget does not allow the next call | `stop_reason="llm_budget_exhausted"`, with the limit named. The final attempt's status is kept, or `inconclusive` if no call was possible. Earlier attempts and their usage are kept. |
+| The model call timed out | `failure_reason="llm_timeout"` (504). If the remaining model time had cut the call's timeout short, it is a budget stop instead. |
+| The actual cost was above the estimate | Recorded as `cost_estimate_exceeded`. Not a failure. |
+
+If the model's price is unknown, its cost cannot be capped. The request is then refused before any work, with 503. The execution's `llm_budget` report lists every call, with the estimated, actual and charged cost. Each proposal's `provenance` stores the budget state when that proposal was generated.
 
 ### Endpoints
 
@@ -421,7 +493,7 @@ The baseline runs twice (`PATCH_BASELINE_RUNS`). Tests whose outcome differs bet
 
 The endpoints use the stored investigation. A client cannot send a diagnosis. Only `completed` investigations are eligible (409 otherwise). The repository must be indexed (404), inside `ALLOWED_REPOSITORY_ROOTS` and inside `AGENT_TRUSTED_TEST_ROOTS`, because verification runs its tests (403). `?repository_id=` and the body field `repository_id` return 404 for another repository's data.
 
-`verified`, `rejected`, `inconclusive` and `validation_failed` return 200. A `failed` execution returns 504 for an LLM timeout, 503 for rate limits or a workspace failure, 502 for provider errors or an invalid proposal, and 500 for internal or database errors. The request runs synchronously. `PATCH_LLM_TIMEOUT_SECONDS` bounds each attempt's model call. `PATCH_MAX_TOTAL_SECONDS` bounds the time spent in baseline and checks.
+`verified`, `rejected`, `inconclusive` and `validation_failed` return 200. The response includes `stop_reason` and the `llm_budget` report. An unknown model price returns 503. A `failed` execution returns 504 for an LLM timeout, 503 for rate limits or a workspace failure, 502 for provider errors or an invalid proposal, and 500 for internal or database errors. The request runs synchronously. `PATCH_LLM_TIMEOUT_SECONDS` bounds each attempt's model call. `PATCH_MAX_TOTAL_SECONDS` bounds the time spent in baseline and checks.
 
 ### Persistence
 
@@ -434,17 +506,104 @@ Migration `9e4b7c2d1a3f` creates `patch_proposals` and `patch_verifications`. Ru
 
 ### Benchmark
 
-`benchmarks/patching/cases.json` reuses the five Task 12 bugs. The model's input is `diagnoses.json` (the recorded diagnoses) and the source code. The expected files, the required tests and the reference patches stay in `cases.json`.
+`benchmarks/patching/cases.json` holds ten bugs. Each has its own small repository under `benchmarks/`. The first five are the Task 12 bugs, which need one change in one file. The other five are harder:
+
+| Case | Category | What makes it hard |
+| --- | --- | --- |
+| `bug-006-region-pricing` | multi-file | Tax and shipping lookups are case-sensitive in opposite directions. Both lookups must change. Normalising only in `checkout.py` looks right but leaves the lookups broken. |
+| `bug-007-durations` | ambiguous root cause | The bug is reported in the cache, but its cause is the shared duration parser, which request timeouts also use. Special-casing seconds in the cache looks right but leaves timeouts wrong. |
+| `bug-008-score-report` | interacting bugs | Fixing the parser exposes a division by zero, and then a `max()` of nothing, in the summary. |
+| `bug-009-leap-year` | plausible wrong fix | Dropping the century rule fixes 2000 but breaks 1900. Special-casing `2000` passes every repository test. |
+| `bug-010-slugify` | plausible wrong fix | Switching to `\w+` keeps `é` and splits on nothing. Replacing only `é` passes every repository test. |
+
+The model's input is the diagnosis and the source code. The diagnosis is either recorded in `diagnoses.json` or produced live by Task 12 with `--diagnosis agent`. The expected files, required tests, reference patches and held-out tests stay out of the model's input.
+
+Held-out tests (`holdout/`) are never in the repository, so neither the model nor the verifier sees them. After an execution, the benchmark applies the final patch to a fresh copy, adds the held-out tests and runs them. They catch overfitting: a patch can be `verified` by Atlas and still fail them. Held-out tests check only behaviour the specification defines: docstrings, the bug report and existing tests.
+
+Exploratory tests (`exploratory/`) check behaviour the specification leaves open. They run the same way and are reported (`exploratory_pass_rate`), but they never count toward the held-out rate or success. Failing one means the patch made a different defensible choice. One example is bug-008's trailing comma: the docstring defines blank input, not `"a:1,"`. That test was first a held-out test and was moved after the first live run, for that reason.
+
+`--rescore RESULTS_JSON` recomputes a saved run's held-out, exploratory and summary metrics in place. It re-applies each recorded final patch and makes no model calls. It does not change the recorded patches, and it appends the previous summary to `rescores` for audit.
 
 ```bash
-uv run python benchmarks/patching/evaluate.py                 # reference patches: free, no LLM, no database
-uv run python benchmarks/patching/evaluate.py --mode live     # real model; costs money
-uv run python benchmarks/patching/evaluate.py --mode live --diagnosis agent   # run Task 12 first
+uv run python benchmarks/patching/evaluate.py                 # 30 reference runs: free, no LLM, no database
+uv run python benchmarks/patching/evaluate.py --test-backend container
+uv run python benchmarks/patching/evaluate.py --mode live --max-cost-usd 2               # recorded diagnoses
+uv run python benchmarks/patching/evaluate.py --mode live --diagnosis agent --max-cost-usd 4   # Task 12, then Task 13
 ```
 
-Reference mode sends 16 fixed patches through the full pipeline: 5 correct, 3 that do not fix the bug, 3 that break other tests, 2 with syntax errors, 2 that weaken a test and 1 that writes `.env`. Each one gets its expected verdict, and the benchmark repositories stay unchanged. `tests/patching/test_benchmark_cases.py` runs the same checks in the test suite.
+Reference mode sends 39 fixed patches through the full pipeline. The original 30 are a regression baseline. Their verdicts, the live result files' hashes and the git revision are frozen in `benchmarks/patching/results/baseline-2026-11-08.manifest.json`. The 14 new ones add the plausible wrong fixes above, two overfit patches and a scripted retry. In the retry, attempt 1 fixes only the parser and is rejected; attempt 2 fixes both bugs and is verified. Every run gets its expected verdict, attempt count and held-out result. `tests/patching/test_benchmark_cases.py` runs the same checks. It also checks that each case's root-cause keywords are not already satisfied by its bug report alone. That check caught weak keyword sets for bug-008 and bug-010.
 
-Metrics: patch generation, validation and application rates, bug-fix rate (the case's required tests pass), regression-free rate, verified rate, success rate, mean attempts, cost and latency. Success means verified, with the required tests passing and only expected files modified. A green suite alone is not success: one regression reference makes the bug test pass and is still rejected.
+#### Repair-retry experiment
+
+Three cases (`bug-011` to `bug-013`, category `repair_retry`) are built so that the obvious fix breaks a rule that the repository's tests define and the bug report does not mention:
+
+| Case | Obvious first fix | The test that rejects it |
+| --- | --- | --- |
+| `bug-011-split-bill` | Give the leftover cents to the last person. | `test_leftover_cents_go_to_the_first_people` |
+| `bug-012-versions` | Compare integer tuples. | `test_release_candidates_compare_by_number`, which crashes on `-rc2` |
+| `bug-013-unique-emails` | Lower-case every address. | `test_original_spelling_is_kept` |
+
+With tests in the prompt, a strong model can read the rule and fix the bug on the first attempt. `--context-tests 0` (`PatchLimits.max_context_test_files`) withholds test contents from the prompt. Every test still runs. The model then learns a test-encoded rule only from the failure output, as it would in a repository too large for its tests to fit in the prompt. Run each arm separately:
+
+```bash
+uv run python benchmarks/patching/evaluate.py --mode live --context-tests 5 --case bug-011-split-bill ...   # control
+uv run python benchmarks/patching/evaluate.py --mode live --context-tests 0 --case bug-011-split-bill ...   # test-blind
+```
+
+A case counts as `repaired_by_retry` only when the record proves every step:
+1. Attempt 1 failed, and its failing checks are recorded.
+2. The final attempt's `feedback_reasons` contain attempt 1's exact failure reasons.
+3. The final diff differs from the first one.
+4. The final patch is verified, and its required and held-out tests pass.
+
+`repair_evidence` in each score holds this chain. A first-attempt success can never count as a repair. Every attempt also stores `feedback_from` and `feedback_reasons`, in memory and in each proposal's `provenance`. The reference set includes a plausible first attempt and a scripted retry for each case. Tests check that the second prompt contains the first attempt's real failure text.
+
+Results on 2026-11-08: `claude-opus-5-5`, recorded diagnoses, up to 3 attempts, and the cases bug-008, bug-011, bug-012 and bug-013. Each arm had a $1 cap.
+
+| Arm | First-attempt failures | Repaired by retry | Final verified | Held-out | Regression rate | Cost | Cost per success | Cost per repair |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Control (`--context-tests 5`) | 0/4 | 0 | 4/4 | 4/4 | 0 | $0.12 | $0.031 | n/a |
+| Test-blind (`--context-tests 0`) | 1/4 | 1 (bug-012) | 4/4 | 4/4 | 1 of 5 attempts | $0.16 | $0.040 | $0.083 |
+
+The bug-012 repair, from `2026-11-08-retry-blind-opus-5-5.json`:
+1. Attempt 1 compared integer tuples. It fixed the reported bug (both required tests passed) and was rejected, because `test_release_candidates_compare_by_number` went from passing to `ValueError: invalid literal for int() with base 10: '0-rc2'`.
+2. Attempt 2 received exactly that reason (`feedback_from=[1]`). It added a pre-release component, and the model's assumptions said why. It was verified, and both held-out tests pass, including `rc10` against `rc9`.
+3. This took two model calls and cost $0.083. The record's `repair_evidence` holds the full chain.
+
+The test-blind arm was then repeated three more times, with a $1 total cap; those runs cost $0.32. `2026-11-08-retry-blind-aggregate.json` combines the four runs, 16 case-runs in all:
+
+| Case | Run 1 | Run 2 | Run 3 | Run 4 |
+| --- | --- | --- | --- | --- |
+| bug-008-score-report | verified | verified | verified | verified |
+| bug-011-split-bill | verified | verified | verified | verified |
+| bug-012-versions | rejected > verified (repaired) | verified, **fails held-out** | rejected > verified (repaired) | rejected > verified (repaired) |
+| bug-013-unique-emails | verified | verified | verified | verified |
+
+- Overall: 3 first-attempt failures in 16 case-runs, all on bug-012. All 3 were repaired on attempt 2, with the full evidence chain, so the retry success rate is 3/3.
+- Final verified: 16/16. Success: 15/16.
+- 3 of the 19 applied attempts caused a regression, and every one was caught and repaired.
+- Total $0.48: $0.076 per successful repair and $0.032 per success.
+- On bug-012, the first attempt failed in 3 of the 4 runs.
+
+Run 2's bug-012 patch is the most important result. The model avoided the `-rc` crash by falling back to plain string comparison for any non-numeric version. That passes every repository test, because `"rc2" > "rc1"` holds as strings too, so Atlas verified it on the first attempt. It fails the held-out `rc10` against `rc9`, which the existing test `test_release_candidates_compare_by_number` defines. That is a wrong patch Atlas accepted, and only the held-out test caught it. Real repositories have no held-out tests, so a reviewer is still required. It also shows that a defensive first attempt can avoid the failure that would have triggered a useful retry.
+
+What this shows and what it doesn't:
+- With tests visible, Opus needed no retries. Without them, it inferred the hidden rule every time in bug-011 (first person) and bug-013 (keep the spelling). It inferred it in none of the four runs of bug-012.
+- The feedback loop works with a real model, and repeatably: 3/3 retries succeeded on the one case that produced them.
+- The rates come from one case with retries, four runs and small samples. They are evidence of the mechanism, not a general repair rate. More retry cases whose hidden rules a model cannot infer are needed.
+
+Metrics:
+- Diagnosis accuracy, in agent mode, using the Task 12 root-cause keywords.
+- Patch generation, validation and application rates.
+- Bug-fix rate: the case's required tests pass.
+- Regression-free rate, and the regression rate per applied attempt.
+- Verified rate, first-attempt verified rate and held-out pass rate.
+- Mean attempts, cases with retries, first-attempt failure rate, retry success rate (cases verified after a failed first attempt) and `repaired_by_retry` (evidence-backed).
+- Cost per successful repair and cost per success. Both include failed attempts.
+- Latency and cost, with diagnosis and patching recorded separately.
+- A breakdown by category.
+
+Success means verified, with the required tests passing, only expected files modified and the held-out tests passing. A green suite alone is not success. One reference regression patch makes the bug test pass and is still rejected. The two overfit references are verified by Atlas and still fail the held-out tests.
 
 Results on 2026-11-08 with `claude-opus-5-5`, effort `high`, recorded diagnoses (`--mode live --max-cost-usd 2`):
 
@@ -456,12 +615,32 @@ Results on 2026-11-08 with `claude-opus-5-5`, effort `high`, recorded diagnoses 
 | bug-004-discount | verified | 1 | +1/-1 | 5.3 s | $0.021 |
 | bug-005-config | verified | 1 | +7/-5 | 8.1 s | $0.029 |
 
+Results on 2026-11-08 for all ten cases, `claude-opus-5-5`, effort `high`, `--max-cost-usd 4` in total for both runs:
+
+| Run | Diagnosis | Verified | First attempt | Held-out | Success | Regressions | Retries | Cost | Mean latency |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `--diagnosis agent` (Task 12, then Task 13) | 10/10 | 10/10 | 10/10 | 7/7 | 10/10 | 0 | 0 | $1.40 ($1.12 diagnosis, $0.28 patching) | 35.6 s |
+| Recorded diagnoses | n/a | 10/10 | 10/10 | 7/7 | 10/10 | 0 | 0 | $0.25 | 6.9 s |
+
+Exploratory tests: in the agent run, the bug-008 patch returns early on blank text and still raises on `"a:1,"`. That is a choice the model stated as an assumption. In the recorded run, the patch skips blank items. Both runs were rescored after the trailing-comma test moved to the exploratory set. Before the move, the agent run was 9/10 success with held-out 6/7. The recorded patches did not change.
+
+Read these numbers with three limits:
+- **No retries.** No case needed a second attempt, so real-model repair from failure feedback is still measured only by the scripted reference retry.
+- **Generous keyword match.** The bug-008 agent diagnosis is counted correct, but it named only the parser bug. It mentioned `summarize` only as the caller, and the keyword matched anyway. The patch generator found the second bug by reading `report.py`.
+- **Small benchmark.** These are ten small, constructed repositories.
+
+The per-attempt records are in `benchmarks/patching/results/`. That run came before the global LLM budget, which has no effect on single-attempt cases.
+
 Verified rate 5/5. Every patch changed only the diagnosed file, and none touched a test. Mean 6.7 s, $0.12 in total. No diff needed context anchoring.
 
 ### Known limitations
 
-- A temporary directory is not a sandbox. Test code runs as this user and can reach the network and the rest of the filesystem. Only verify trusted repositories (`AGENT_TRUSTED_TEST_ROOTS`). Untrusted repositories need container workers with no network.
-- `RLIMIT_AS` (memory) is not enforced on macOS.
+- With the local backend (the default), a temporary directory is not a sandbox. Test code runs as this user and can reach the network and the rest of the filesystem. Only verify trusted repositories (`AGENT_TRUSTED_TEST_ROOTS`). `RLIMIT_AS` (memory) is not enforced on macOS.
+- A container is an isolation boundary, not a guarantee. It shares the host kernel, so a kernel or runtime vulnerability can break out. Treat `PATCH_CONTAINER_ALLOW_UNTRUSTED` as a security-sensitive setting. For hostile code, run the worker on a separate VM or host, and consider gVisor or Kata.
+- The container's `--user` is the host user's UID, so that the bind-mounted workspace is writable. Inside the container that UID has no privileges and no capabilities. On a host where that UID owns sensitive files, run Atlas as a dedicated user.
+- The image contains only pytest. If a baseline test fails only with `ModuleNotFoundError` for a module that is not part of the repository, that is an environment problem. The run stops as `inconclusive` before calling the model, so a patch that deletes the import can never be "verified". Per-repository images with dependencies come later.
 - Only Python source files can be patched, and only test files named `test_*.py` or `*_test.py` are selected.
-- Test selection follows imports one hop. It does not use the Neo4j graph yet.
+- Graph test discovery follows `CALLS` edges only. It misses tests that reach the code through pytest fixtures, dynamic dispatch or calls the Task 10 resolver leaves unresolved. Import association still covers those tests at the file level.
+- The Neo4j staleness check compares line ranges of the seeds and the discovered tests. An edit inside a function that keeps its line range is not detected. The edges from such an edit can be outdated.
+- Atlas can only verify against the tests a repository has. A patch that special-cases the reported input can be `verified`, as the two overfit references show. The held-out tests measure this in the benchmark, but real repositories have no held-out tests. A human still reviews every patch.
 - The live results below use recorded diagnoses on five small, single-bug repositories. They show that the pipeline works with a real model. They are not a measure of patch quality on real code.

@@ -1,0 +1,4067 @@
+{
+  "summary": {
+    "cases": 4,
+    "diagnosis_accuracy": null,
+    "patch_generation_rate": 1.0,
+    "patch_validation_rate": 1.0,
+    "patch_application_rate": 1.0,
+    "bug_fix_rate": 1.0,
+    "regression_free_rate": 1.0,
+    "verified_patch_rate": 1.0,
+    "first_attempt_verified_rate": 0.75,
+    "holdout_pass_rate": 1.0,
+    "holdout_cases": 4,
+    "exploratory_pass_rate": 0.6667,
+    "success_rate": 1.0,
+    "regression_rate": 0.2,
+    "mean_attempts": 1.25,
+    "cases_with_retries": 1,
+    "retry_success_rate": 1.0,
+    "first_attempt_failure_rate": 0.25,
+    "repaired_by_retry": 1,
+    "cost_per_successful_repair": 0.073957,
+    "cost_per_success": 0.030899,
+    "mean_cost_usd": 0.030899,
+    "total_cost_usd": 0.123596,
+    "mean_latency_seconds": 12.748,
+    "expectation_match_rate": null,
+    "by_category": {
+      "interacting_bugs": {
+        "cases": 1,
+        "verified_rate": 1,
+        "success_rate": 1,
+        "mean_attempts": 1
+      },
+      "repair_retry": {
+        "cases": 3,
+        "verified_rate": 1,
+        "success_rate": 1,
+        "mean_attempts": 1.33
+      }
+    }
+  },
+  "scores": [
+    {
+      "case_id": "bug-008-score-report",
+      "category": "interacting_bugs",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "attempt_statuses": [
+        "verified"
+      ],
+      "attempts_with_regressions": 0,
+      "attempts_applied": 1,
+      "holdout_passed": true,
+      "holdout_results": {
+        "test_holdout_report.py::test_whitespace_only": "passed"
+      },
+      "first_attempt_failed": false,
+      "repaired_by_retry": false,
+      "repair_evidence": {},
+      "exploratory_passed": true,
+      "exploratory_results": {
+        "test_exploratory_report.py::test_trailing_comma": "passed"
+      },
+      "files_modified": [
+        "parsing.py",
+        "report.py"
+      ],
+      "lines_added": 4,
+      "lines_removed": 0,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 8.279,
+      "input_tokens": 2151,
+      "output_tokens": 767,
+      "cost_usd": 0.015785,
+      "diagnosis_status": null,
+      "diagnosis_correct": null,
+      "diagnosis_cost_usd": null,
+      "diagnosis_seconds": null,
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "total_cost_usd": 0.015785,
+      "total_seconds": 8.279
+    },
+    {
+      "case_id": "bug-011-split-bill",
+      "category": "repair_retry",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "attempt_statuses": [
+        "verified"
+      ],
+      "attempts_with_regressions": 0,
+      "attempts_applied": 1,
+      "holdout_passed": true,
+      "holdout_results": {
+        "test_holdout_billing.py::test_leftover_spread_over_the_first_people": "passed",
+        "test_holdout_billing.py::test_totals_always_add_up": "passed"
+      },
+      "first_attempt_failed": false,
+      "repaired_by_retry": false,
+      "repair_evidence": {},
+      "exploratory_passed": null,
+      "exploratory_results": {},
+      "files_modified": [
+        "billing.py"
+      ],
+      "lines_added": 2,
+      "lines_removed": 2,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 9.044,
+      "input_tokens": 1938,
+      "output_tokens": 895,
+      "cost_usd": 0.018303,
+      "diagnosis_status": null,
+      "diagnosis_correct": null,
+      "diagnosis_cost_usd": null,
+      "diagnosis_seconds": null,
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "total_cost_usd": 0.018303,
+      "total_seconds": 9.044
+    },
+    {
+      "case_id": "bug-012-versions",
+      "category": "repair_retry",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 2,
+      "attempt_statuses": [
+        "rejected",
+        "verified"
+      ],
+      "attempts_with_regressions": 1,
+      "attempts_applied": 2,
+      "holdout_passed": true,
+      "holdout_results": {
+        "test_holdout_versions.py::test_double_digit_patch_version": "passed",
+        "test_holdout_versions.py::test_double_digit_release_candidate": "passed"
+      },
+      "first_attempt_failed": true,
+      "repaired_by_retry": true,
+      "repair_evidence": {
+        "first_attempt_status": "rejected",
+        "first_attempt_failed_checks": [
+          "regression_tests",
+          "full_test_suite"
+        ],
+        "first_attempt_reasons": [
+          "regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'",
+          "full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']"
+        ],
+        "first_attempt_required_tests": {
+          "test_double_digit_minor_version": "passed",
+          "test_update_available": "passed"
+        },
+        "final_attempt": 2,
+        "final_received_feedback_from": [
+          1
+        ],
+        "feedback_delivered": true,
+        "diff_changed": true,
+        "final_required_tests": {
+          "test_double_digit_minor_version": "passed",
+          "test_update_available": "passed"
+        }
+      },
+      "exploratory_passed": true,
+      "exploratory_results": {
+        "test_exploratory_versions.py::test_release_is_newer_than_its_candidate": "passed"
+      },
+      "files_modified": [
+        "versions.py"
+      ],
+      "lines_added": 20,
+      "lines_removed": 1,
+      "verification_failures": [],
+      "rejected_reasons": [
+        "regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'",
+        "full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']"
+      ],
+      "duration_seconds": 25.96,
+      "input_tokens": 5450,
+      "output_tokens": 2786,
+      "cost_usd": 0.073957,
+      "diagnosis_status": null,
+      "diagnosis_correct": null,
+      "diagnosis_cost_usd": null,
+      "diagnosis_seconds": null,
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "total_cost_usd": 0.073957,
+      "total_seconds": 25.96
+    },
+    {
+      "case_id": "bug-013-unique-emails",
+      "category": "repair_retry",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "attempt_statuses": [
+        "verified"
+      ],
+      "attempts_with_regressions": 0,
+      "attempts_applied": 1,
+      "holdout_passed": true,
+      "holdout_results": {
+        "test_holdout_contacts.py::test_first_spelling_wins_for_every_address": "passed"
+      },
+      "first_attempt_failed": false,
+      "repaired_by_retry": false,
+      "repair_evidence": {},
+      "exploratory_passed": false,
+      "exploratory_results": {
+        "test_exploratory_contacts.py::test_surrounding_whitespace_is_ignored": "failed"
+      },
+      "files_modified": [
+        "contacts.py"
+      ],
+      "lines_added": 8,
+      "lines_removed": 1,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 7.709,
+      "input_tokens": 1878,
+      "output_tokens": 758,
+      "cost_usd": 0.015551,
+      "diagnosis_status": null,
+      "diagnosis_correct": null,
+      "diagnosis_cost_usd": null,
+      "diagnosis_seconds": null,
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "total_cost_usd": 0.015551,
+      "total_seconds": 7.709
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "3b2c9702-2d1e-497e-9e60-47f618221580",
+      "investigation_id": "dfe23b23-cc82-5529-a207-e5067b9d356f",
+      "repository_id": "bench-bug-008-score-report",
+      "status": "verified",
+      "final_patch_id": "953f5dcc-8300-401c-a380-7a0a3820dcfd",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "953f5dcc-8300-401c-a380-7a0a3820dcfd",
+            "investigation_id": "dfe23b23-cc82-5529-a207-e5067b9d356f",
+            "repository_id": "bench-bug-008-score-report",
+            "execution_id": "3b2c9702-2d1e-497e-9e60-47f618221580",
+            "attempt_number": 1,
+            "description": "parse_scores now skips blank items (so blank or whitespace-only input gives {}). summarize returns count 0, mean 0.0 and best None when there are no scores.",
+            "unified_diff": "--- a/parsing.py\n+++ b/parsing.py\n@@ -2,5 +2,7 @@\n     \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n     scores = {}\n     for item in text.split(\",\"):\n+        if not item.strip():\n+            continue\n         name, value = item.split(\":\")\n         scores[name.strip()] = int(value)\n     return scores\n--- a/report.py\n+++ b/report.py\n@@ -5,6 +5,8 @@\n     \"\"\"Count, mean and best player. No scores: count 0, mean 0.0, best None.\"\"\"\n     scores = parse_scores(text)\n     values = list(scores.values())\n+    if not values:\n+        return {\"count\": 0, \"mean\": 0.0, \"best\": None}\n     return {\n         \"count\": len(values),\n         \"mean\": round(sum(values) / len(values), 2),\n",
+            "affected_files": [
+              "parsing.py",
+              "report.py"
+            ],
+            "rationale": "Splitting blank input on commas gives one empty item, and unpacking it raised the ValueError. Skipping items that are blank after stripping makes the parser return an empty dict, as its docstring says. summarize then needs an empty-case guard so it doesn't divide by zero or call max() on an empty dict. The guard returns the documented empty summary.",
+            "assumptions": [
+              "Blank items in otherwise valid input (e.g. 'alice:3,,bob:5' or a trailing comma) are skipped too, not treated as errors.",
+              "Malformed items that aren't blank (e.g. 'alice') still raise ValueError, as before."
+            ],
+            "risks": [
+              "Input with a stray comma that used to raise ValueError is now accepted quietly. A test that expects an error for that would fail."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-08T00:03:51.306694Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 767,
+              "cache_read_input_tokens": 2147,
+              "cache_creation_input_tokens": 0
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [
+              "parsing.py: hunk header said -2,5 +2,7; the body has 6 old and 8 new lines (counts corrected)"
+            ],
+            "affected_files": [
+              "parsing.py",
+              "report.py"
+            ],
+            "added_lines": 4,
+            "removed_lines": 0,
+            "diff_sha256": "bcde319b1a23ab79924eb990c9b8165033df60b766c6d211c2943b5193f471e0"
+          },
+          "workspace": {
+            "workspace_id": "3b2c9702-patched-1-49qrbcn7",
+            "label": "patched-1",
+            "snapshot_hash": "53606b743cf5a5fb807905838fa8f8a9b6227efcb95e48824da363a548e04552",
+            "file_count": 3,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "parsing.py",
+              "report.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.018
+          },
+          "verification": {
+            "verification_id": "439ce210-06fc-4a2b-b36e-fb01504625a1",
+            "patch_id": "953f5dcc-8300-401c-a380-7a0a3820dcfd",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.018,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "parsing.py",
+                    "report.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.184,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_report.py::test_parse_blank",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_report.py::test_summary_of_blank_input",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.184,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.04,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.131,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_report.py"
+                  ],
+                  "targets": [
+                    "test_report.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".F.F                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________________ test_parse_blank _______________________________\n\n    def test_parse_blank():\n>       assert parse_scores(\"\") == {}\n               ^^^^^^^^^^^^^^^^\n\ntest_report.py:10: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n_________________________ test_summary_of_blank_input __________________________\n\n    def test_summary_of_blank_input():\n>       assert summarize(\"\") == {\"count\": 0, \"mean\": 0.0, \"best\": None}\n               ^^^^^^^^^^^^^\n\ntest_report.py:18: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nreport.py:6: in summarize\n    scores = parse_scores(text)\n             ^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n=========================== short test summary info ============================\nFAILED test_report.py::test_parse_blank - ValueError: not enough values to un...\nFAILED test_report.py::test_summary_of_blank_input - ValueError: not enough v...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.128,
+                  "started_at": "2026-11-08T00:03:43.665844Z",
+                  "tests": {
+                    "test_report.py::test_parse_scores": {
+                      "test_id": "test_report.py::test_parse_scores",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_parse_blank": {
+                      "test_id": "test_report.py::test_parse_blank",
+                      "outcome": "failed",
+                      "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_summary": {
+                      "test_id": "test_report.py::test_summary",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_summary_of_blank_input": {
+                      "test_id": "test_report.py::test_summary_of_blank_input",
+                      "outcome": "failed",
+                      "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_report.py"
+                  ],
+                  "targets": [
+                    "test_report.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".F.F                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________________ test_parse_blank _______________________________\n\n    def test_parse_blank():\n>       assert parse_scores(\"\") == {}\n               ^^^^^^^^^^^^^^^^\n\ntest_report.py:10: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n_________________________ test_summary_of_blank_input __________________________\n\n    def test_summary_of_blank_input():\n>       assert summarize(\"\") == {\"count\": 0, \"mean\": 0.0, \"best\": None}\n               ^^^^^^^^^^^^^\n\ntest_report.py:18: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nreport.py:6: in summarize\n    scores = parse_scores(text)\n             ^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n=========================== short test summary info ============================\nFAILED test_report.py::test_parse_blank - ValueError: not enough values to un...\nFAILED test_report.py::test_summary_of_blank_input - ValueError: not enough v...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.181,
+                  "started_at": "2026-11-08T00:03:43.847929Z",
+                  "tests": {
+                    "test_report.py::test_parse_scores": {
+                      "test_id": "test_report.py::test_parse_scores",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_parse_blank": {
+                      "test_id": "test_report.py::test_parse_blank",
+                      "outcome": "failed",
+                      "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_summary": {
+                      "test_id": "test_report.py::test_summary",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_report.py::test_summary_of_blank_input": {
+                      "test_id": "test_report.py::test_summary_of_blank_input",
+                      "outcome": "failed",
+                      "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": ".F.F                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________________ test_parse_blank _______________________________\n\n    def test_parse_blank():\n>       assert parse_scores(\"\") == {}\n               ^^^^^^^^^^^^^^^^\n\ntest_report.py:10: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n_________________________ test_summary_of_blank_input __________________________\n\n    def test_summary_of_blank_input():\n>       assert summarize(\"\") == {\"count\": 0, \"mean\": 0.0, \"best\": None}\n               ^^^^^^^^^^^^^\n\ntest_report.py:18: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nreport.py:6: in summarize\n    scores = parse_scores(text)\n             ^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ntext = ''\n\n    def parse_scores(text: str) -> dict[str, int]:\n        \"\"\"'alice:3, bob:5' -> {'alice': 3, 'bob': 5}. Blank input means no scores.\"\"\"\n        scores = {}\n        for item in text.split(\",\"):\n>           name, value = item.split(\":\")\n            ^^^^^^^^^^^\nE           ValueError: not enough values to unpack (expected 2, got 1)\n\nparsing.py:5: ValueError\n=========================== short test summary info ============================\nFAILED test_report.py::test_parse_blank - ValueError: not enough values to un...\nFAILED test_report.py::test_summary_of_blank_input - ValueError: not enough v...\n2 failed, 2 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.184,
+                "started_at": "2026-11-08T00:03:44.032698Z",
+                "tests": {
+                  "test_report.py::test_parse_scores": {
+                    "test_id": "test_report.py::test_parse_scores",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_parse_blank": {
+                    "test_id": "test_report.py::test_parse_blank",
+                    "outcome": "failed",
+                    "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary": {
+                    "test_id": "test_report.py::test_summary",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary_of_blank_input": {
+                    "test_id": "test_report.py::test_summary_of_blank_input",
+                    "outcome": "failed",
+                    "message": "ValueError: not enough values to unpack (expected 2, got 1)",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_report.py::test_parse_blank",
+                "test_report.py::test_summary_of_blank_input"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_report.py"
+                ],
+                "targets": [
+                  "test_report.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.184,
+                "started_at": "2026-11-08T00:03:51.530119Z",
+                "tests": {
+                  "test_report.py::test_parse_scores": {
+                    "test_id": "test_report.py::test_parse_scores",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_parse_blank": {
+                    "test_id": "test_report.py::test_parse_blank",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary": {
+                    "test_id": "test_report.py::test_summary",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary_of_blank_input": {
+                    "test_id": "test_report.py::test_summary_of_blank_input",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.04,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.077,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.131,
+                "started_at": "2026-11-08T00:03:51.779784Z",
+                "tests": {
+                  "test_report.py::test_parse_scores": {
+                    "test_id": "test_report.py::test_parse_scores",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_parse_blank": {
+                    "test_id": "test_report.py::test_parse_blank",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary": {
+                    "test_id": "test_report.py::test_summary",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_report.py::test_summary_of_blank_input": {
+                    "test_id": "test_report.py::test_summary_of_blank_input",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_report.py::test_parse_blank",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_report.py::test_parse_scores",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_report.py::test_summary",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_report.py::test_summary_of_blank_input",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "test_report.py::test_parse_blank",
+                  "test_report.py::test_summary_of_blank_input"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_report.py::test_parse_blank",
+                  "test_report.py::test_summary_of_blank_input"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_report.py::test_parse_blank",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_report.py::test_parse_scores",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_report.py::test_summary",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_report.py::test_summary_of_blank_input",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "test_report.py::test_parse_blank",
+                "test_report.py::test_summary_of_blank_input"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_report.py::test_parse_blank",
+                "test_report.py::test_summary_of_blank_input"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_report.py::test_parse_blank, test_report.py::test_summary_of_blank_input) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.435,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_backend": {
+                "backend": "local",
+                "isolated": false,
+                "resource_limits": {
+                  "RLIMIT_CPU": 120,
+                  "RLIMIT_AS": 2147483648,
+                  "RLIMIT_FSIZE": 209715200,
+                  "RLIMIT_NOFILE": 256
+                }
+              },
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_report.py"
+              ],
+              "snapshot_hash": "53606b743cf5a5fb807905838fa8f8a9b6227efcb95e48824da363a548e04552",
+              "source_revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "bcde319b1a23ab79924eb990c9b8165033df60b766c6d211c2943b5193f471e0"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_report.py::test_parse_blank, test_report.py::test_summary_of_blank_input) and every required check passed in an isolated workspace. The original repository was not modified.",
+          "feedback_from": [],
+          "feedback_reasons": []
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "53606b743cf5a5fb807905838fa8f8a9b6227efcb95e48824da363a548e04552",
+        "file_count": 3,
+        "total_bytes": 1067,
+        "revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+        "dirty": true,
+        "skipped": [],
+        "captured_at": "2026-11-08T00:03:43.519590Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_report.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module parsing.py, report.py",
+              "named after affected file report.py",
+              "imports an affected symbol",
+              "graph (in-memory): test_parse_blank, test_parse_scores, test_summary (+1 more) reach the patched code; best path test_parse_blank -> parse_scores (1 hop, score 1.00)"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0,
+            "score": 0.0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": [],
+        "graph": {
+          "source": "in_memory",
+          "seeds": 2,
+          "suggestions": [
+            {
+              "target": "test_report.py",
+              "reason": "graph (in-memory): test_parse_blank, test_parse_scores, test_summary (+1 more) reach the patched code; best path test_parse_blank -> parse_scores (1 hop, score 1.00)",
+              "priority": 3,
+              "score": 1.0
+            }
+          ],
+          "warnings": [],
+          "stale_entities": []
+        }
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_report.py::test_parse_blank",
+          "test_report.py::test_summary_of_blank_input"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_report.py::test_parse_blank, test_report.py::test_summary_of_blank_input) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 8.279,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 767,
+        "cache_read_input_tokens": 2147,
+        "cache_creation_input_tokens": 0
+      },
+      "original_repository_modified": false,
+      "llm_budget": {
+        "max_requests": 6,
+        "max_seconds": 300.0,
+        "max_cost_usd": 1.0,
+        "requests": 1,
+        "seconds_spent": 7.273,
+        "cost_spent_usd": 0.015785,
+        "exhausted_by": null,
+        "cost_estimate_exceeded": false,
+        "calls": [
+          {
+            "label": "attempt 1, call 1",
+            "model": "claude-opus-5-5",
+            "outcome": "ok",
+            "estimated_cost_usd": 0.330655,
+            "actual_cost_usd": 0.015785,
+            "charged_cost_usd": 0.015785,
+            "seconds": 7.273,
+            "timeout_clipped": false,
+            "cost_estimate_exceeded": false
+          }
+        ]
+      }
+    },
+    {
+      "execution_id": "beecf0f2-35cd-422c-af6f-fdfdd6a691d7",
+      "investigation_id": "0ff3b000-cc69-55fa-b0f0-ce0c87c10bea",
+      "repository_id": "bench-bug-011-split-bill",
+      "status": "verified",
+      "final_patch_id": "3aeb187f-073c-4e8c-8767-5dcc6c1e65b0",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "3aeb187f-073c-4e8c-8767-5dcc6c1e65b0",
+            "investigation_id": "0ff3b000-cc69-55fa-b0f0-ce0c87c10bea",
+            "repository_id": "bench-bug-011-split-bill",
+            "execution_id": "beecf0f2-35cd-422c-af6f-fdfdd6a691d7",
+            "attempt_number": 1,
+            "description": "split_bill now uses integer division to get a base share, then adds one extra cent to each of the first `remainder` people, so the shares always add up to the total.",
+            "unified_diff": "--- a/billing.py\n+++ b/billing.py\n@@ -1,4 +1,4 @@\n def split_bill(total_cents: int, people: int) -> list[int]:\n     \"\"\"Split a bill into one share per person, in cents. The shares always add up to the total.\"\"\"\n-    share = round(total_cents / people)\n-    return [share] * people\n+    share, remainder = divmod(total_cents, people)\n+    return [share + 1 if i < remainder else share for i in range(people)]\n",
+            "affected_files": [
+              "billing.py"
+            ],
+            "rationale": "The bug happened because one rounded share was repeated for everyone, so any leftover cents were lost. divmod(total_cents, people) gives the base share and the exact number of leftover cents. Giving one of those cents to each of the first people makes the shares add up to total_cents (e.g. 10000/3 -> [3334, 3333, 3333]). This is what both failing tests expect.",
+            "assumptions": [
+              "Leftover cents go one at a time to the first people in the list, as test_leftover_cents_go_to_the_first_people expects.",
+              "people is a positive integer. people=0 still raises ZeroDivisionError, as it did before."
+            ],
+            "risks": [
+              "When the total doesn't divide evenly, shares now differ by one cent (e.g. 10 split 4 ways was [2, 2, 2, 2] and is now [3, 3, 2, 2]). Any hidden test that relies on the old rounding of identical shares would change.",
+              "With a negative total, floor division in divmod gives the extra cents to the first people, so the earlier shares are less negative (e.g. -100 split 3 ways gives [-33, -33, -34]). They still add up to the total."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-08T00:04:00.768828Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 895,
+              "cache_read_input_tokens": 1934,
+              "cache_creation_input_tokens": 0
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "billing.py"
+            ],
+            "added_lines": 2,
+            "removed_lines": 2,
+            "diff_sha256": "24746a8d9455074a7dd60f0ee7b8422b97e6ea3a530cdc5d76f1a3745ff9a0db"
+          },
+          "workspace": {
+            "workspace_id": "beecf0f2-patched-1-_7iagsxm",
+            "label": "patched-1",
+            "snapshot_hash": "f4c2ad4f11b53b61054ced3c953aa6c493971f1b88ef0539064f018debd3baaa",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "billing.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.023
+          },
+          "verification": {
+            "verification_id": "3382493d-8378-46b7-b397-a9128b1ccda9",
+            "patch_id": "3aeb187f-073c-4e8c-8767-5dcc6c1e65b0",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.023,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "billing.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.13,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.13,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.02,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.132,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_billing.py"
+                  ],
+                  "targets": [
+                    "test_billing.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________ test_shares_add_up_to_the_total ________________________\n\n    def test_shares_add_up_to_the_total():\n>       assert sum(split_bill(10000, 3)) == 10000\nE       assert 9999 == 10000\nE        +  where 9999 = sum([3333, 3333, 3333])\nE        +    where [3333, 3333, 3333] = split_bill(10000, 3)\n\ntest_billing.py:13: AssertionError\n__________________ test_leftover_cents_go_to_the_first_people __________________\n\n    def test_leftover_cents_go_to_the_first_people():\n>       assert split_bill(10000, 3) == [3334, 3333, 3333]\nE       assert [3333, 3333, 3333] == [3334, 3333, 3333]\nE         \nE         At index 0 diff: 3333 != 3334\nE         Use -v to get more diff\n\ntest_billing.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_billing.py::test_shares_add_up_to_the_total - assert 9999 == 10000\nFAILED test_billing.py::test_leftover_cents_go_to_the_first_people - assert [...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.129,
+                  "started_at": "2026-11-08T00:03:52.254657Z",
+                  "tests": {
+                    "test_billing.py::test_even_split": {
+                      "test_id": "test_billing.py::test_even_split",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_single_person": {
+                      "test_id": "test_billing.py::test_single_person",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_shares_add_up_to_the_total": {
+                      "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                      "outcome": "failed",
+                      "message": "assert 9999 == 10000\n +  where 9999 = sum([3333, 3333, 3333])\n +    where [3333, 3333, 3333] = split_bill(10000, 3)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_leftover_cents_go_to_the_first_people": {
+                      "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                      "outcome": "failed",
+                      "message": "assert [3333, 3333, 3333] == [3334, 3333, 3333]\n  \n  At index 0 diff: 3333 != 3334\n  Use -v to get more diff",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_billing.py"
+                  ],
+                  "targets": [
+                    "test_billing.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________ test_shares_add_up_to_the_total ________________________\n\n    def test_shares_add_up_to_the_total():\n>       assert sum(split_bill(10000, 3)) == 10000\nE       assert 9999 == 10000\nE        +  where 9999 = sum([3333, 3333, 3333])\nE        +    where [3333, 3333, 3333] = split_bill(10000, 3)\n\ntest_billing.py:13: AssertionError\n__________________ test_leftover_cents_go_to_the_first_people __________________\n\n    def test_leftover_cents_go_to_the_first_people():\n>       assert split_bill(10000, 3) == [3334, 3333, 3333]\nE       assert [3333, 3333, 3333] == [3334, 3333, 3333]\nE         \nE         At index 0 diff: 3333 != 3334\nE         Use -v to get more diff\n\ntest_billing.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_billing.py::test_shares_add_up_to_the_total - assert 9999 == 10000\nFAILED test_billing.py::test_leftover_cents_go_to_the_first_people - assert [...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.13,
+                  "started_at": "2026-11-08T00:03:52.385401Z",
+                  "tests": {
+                    "test_billing.py::test_even_split": {
+                      "test_id": "test_billing.py::test_even_split",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_single_person": {
+                      "test_id": "test_billing.py::test_single_person",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_shares_add_up_to_the_total": {
+                      "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                      "outcome": "failed",
+                      "message": "assert 9999 == 10000\n +  where 9999 = sum([3333, 3333, 3333])\n +    where [3333, 3333, 3333] = split_bill(10000, 3)",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_billing.py::test_leftover_cents_go_to_the_first_people": {
+                      "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                      "outcome": "failed",
+                      "message": "assert [3333, 3333, 3333] == [3334, 3333, 3333]\n  \n  At index 0 diff: 3333 != 3334\n  Use -v to get more diff",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n_______________________ test_shares_add_up_to_the_total ________________________\n\n    def test_shares_add_up_to_the_total():\n>       assert sum(split_bill(10000, 3)) == 10000\nE       assert 9999 == 10000\nE        +  where 9999 = sum([3333, 3333, 3333])\nE        +    where [3333, 3333, 3333] = split_bill(10000, 3)\n\ntest_billing.py:13: AssertionError\n__________________ test_leftover_cents_go_to_the_first_people __________________\n\n    def test_leftover_cents_go_to_the_first_people():\n>       assert split_bill(10000, 3) == [3334, 3333, 3333]\nE       assert [3333, 3333, 3333] == [3334, 3333, 3333]\nE         \nE         At index 0 diff: 3333 != 3334\nE         Use -v to get more diff\n\ntest_billing.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_billing.py::test_shares_add_up_to_the_total - assert 9999 == 10000\nFAILED test_billing.py::test_leftover_cents_go_to_the_first_people - assert [...\n2 failed, 2 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.129,
+                "started_at": "2026-11-08T00:03:52.515196Z",
+                "tests": {
+                  "test_billing.py::test_even_split": {
+                    "test_id": "test_billing.py::test_even_split",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_single_person": {
+                    "test_id": "test_billing.py::test_single_person",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_shares_add_up_to_the_total": {
+                    "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                    "outcome": "failed",
+                    "message": "assert 9999 == 10000\n +  where 9999 = sum([3333, 3333, 3333])\n +    where [3333, 3333, 3333] = split_bill(10000, 3)",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_leftover_cents_go_to_the_first_people": {
+                    "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                    "outcome": "failed",
+                    "message": "assert [3333, 3333, 3333] == [3334, 3333, 3333]\n  \n  At index 0 diff: 3333 != 3334\n  Use -v to get more diff",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                "test_billing.py::test_shares_add_up_to_the_total"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_billing.py"
+                ],
+                "targets": [
+                  "test_billing.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.13,
+                "started_at": "2026-11-08T00:04:00.955215Z",
+                "tests": {
+                  "test_billing.py::test_even_split": {
+                    "test_id": "test_billing.py::test_even_split",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_single_person": {
+                    "test_id": "test_billing.py::test_single_person",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_shares_add_up_to_the_total": {
+                    "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_leftover_cents_go_to_the_first_people": {
+                    "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.02,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.04,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.132,
+                "started_at": "2026-11-08T00:04:01.150156Z",
+                "tests": {
+                  "test_billing.py::test_even_split": {
+                    "test_id": "test_billing.py::test_even_split",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_single_person": {
+                    "test_id": "test_billing.py::test_single_person",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_shares_add_up_to_the_total": {
+                    "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_billing.py::test_leftover_cents_go_to_the_first_people": {
+                    "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_billing.py::test_even_split",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_billing.py::test_single_person",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  }
+                ],
+                "fixed": [
+                  "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                  "test_billing.py::test_shares_add_up_to_the_total"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                  "test_billing.py::test_shares_add_up_to_the_total"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_billing.py::test_even_split",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_billing.py::test_shares_add_up_to_the_total",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_billing.py::test_single_person",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                }
+              ],
+              "fixed": [
+                "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                "test_billing.py::test_shares_add_up_to_the_total"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_billing.py::test_leftover_cents_go_to_the_first_people",
+                "test_billing.py::test_shares_add_up_to_the_total"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_billing.py::test_leftover_cents_go_to_the_first_people, test_billing.py::test_shares_add_up_to_the_total) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.326,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_backend": {
+                "backend": "local",
+                "isolated": false,
+                "resource_limits": {
+                  "RLIMIT_CPU": 120,
+                  "RLIMIT_AS": 2147483648,
+                  "RLIMIT_FSIZE": 209715200,
+                  "RLIMIT_NOFILE": 256
+                }
+              },
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_billing.py"
+              ],
+              "snapshot_hash": "f4c2ad4f11b53b61054ced3c953aa6c493971f1b88ef0539064f018debd3baaa",
+              "source_revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "24746a8d9455074a7dd60f0ee7b8422b97e6ea3a530cdc5d76f1a3745ff9a0db"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_billing.py::test_leftover_cents_go_to_the_first_people, test_billing.py::test_shares_add_up_to_the_total) and every required check passed in an isolated workspace. The original repository was not modified.",
+          "feedback_from": [],
+          "feedback_reasons": []
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "f4c2ad4f11b53b61054ced3c953aa6c493971f1b88ef0539064f018debd3baaa",
+        "file_count": 2,
+        "total_bytes": 639,
+        "revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+        "dirty": true,
+        "skipped": [],
+        "captured_at": "2026-11-08T00:03:52.122806Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_billing.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module billing.py",
+              "named after affected file billing.py",
+              "imports an affected symbol",
+              "graph (in-memory): test_even_split, test_leftover_cents_go_to_the_first_people, test_shares_add_up_to_the_total (+1 more) reach the patched code; best path test_even_split -> split_bill (1 hop, score 1.00)"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0,
+            "score": 0.0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": [],
+        "graph": {
+          "source": "in_memory",
+          "seeds": 1,
+          "suggestions": [
+            {
+              "target": "test_billing.py",
+              "reason": "graph (in-memory): test_even_split, test_leftover_cents_go_to_the_first_people, test_shares_add_up_to_the_total (+1 more) reach the patched code; best path test_even_split -> split_bill (1 hop, score 1.00)",
+              "priority": 3,
+              "score": 1.0
+            }
+          ],
+          "warnings": [],
+          "stale_entities": []
+        }
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_billing.py::test_leftover_cents_go_to_the_first_people",
+          "test_billing.py::test_shares_add_up_to_the_total"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_billing.py::test_leftover_cents_go_to_the_first_people, test_billing.py::test_shares_add_up_to_the_total) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 9.044,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 895,
+        "cache_read_input_tokens": 1934,
+        "cache_creation_input_tokens": 0
+      },
+      "original_repository_modified": false,
+      "llm_budget": {
+        "max_requests": 6,
+        "max_seconds": 300.0,
+        "max_cost_usd": 1.0,
+        "requests": 1,
+        "seconds_spent": 8.253,
+        "cost_spent_usd": 0.018303,
+        "exhausted_by": null,
+        "cost_estimate_exceeded": false,
+        "calls": [
+          {
+            "label": "attempt 1, call 1",
+            "model": "claude-opus-5-5",
+            "outcome": "ok",
+            "estimated_cost_usd": 0.329425,
+            "actual_cost_usd": 0.018303,
+            "charged_cost_usd": 0.018303,
+            "seconds": 8.253,
+            "timeout_clipped": false,
+            "cost_estimate_exceeded": false
+          }
+        ]
+      }
+    },
+    {
+      "execution_id": "180fe045-8c66-424d-8a8d-c50847872181",
+      "investigation_id": "0f54cb67-bd1a-5549-b046-443ec155fde8",
+      "repository_id": "bench-bug-012-versions",
+      "status": "verified",
+      "final_patch_id": "1877c085-a260-48c0-b77b-4a22b501bb48",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "rejected",
+          "proposal": {
+            "patch_id": "cedacb78-23c7-44f4-a143-eac8bdba9af6",
+            "investigation_id": "0f54cb67-bd1a-5549-b046-443ec155fde8",
+            "repository_id": "bench-bug-012-versions",
+            "execution_id": "180fe045-8c66-424d-8a8d-c50847872181",
+            "attempt_number": 1,
+            "description": "is_newer now turns both version strings into tuples of integers and compares those, instead of comparing the raw strings character by character.",
+            "unified_diff": "--- a/versions.py\n+++ b/versions.py\n@@ -1,6 +1,10 @@\n+def _parse(version: str) -> tuple[int, ...]:\n+    return tuple(int(part) for part in version.split(\".\"))\n+\n+\n def is_newer(candidate: str, current: str) -> bool:\n     \"\"\"True when ``candidate`` is a later release than ``current``.\"\"\"\n-    return candidate > current\n+    return _parse(candidate) > _parse(current)\n \n \n def needs_update(installed: str, available: list[str]) -> bool:\n",
+            "affected_files": [
+              "versions.py"
+            ],
+            "rationale": "The root cause is comparing strings lexicographically, so '1.10.0' < '1.9.0' because '1' < '9'. Splitting on '.' and converting each part to int makes the comparison numeric, so (1, 10, 0) > (1, 9, 0). needs_update calls is_newer, so it is fixed too.",
+            "assumptions": [
+              "Version strings are dot-separated whole numbers like '1.10.0', with no pre-release or build suffixes.",
+              "If the number of parts differs, standard tuple comparison applies, so '1.0' counts as older than '1.0.0'. Nothing in the report or tests pins this down."
+            ],
+            "risks": [
+              "A version with a non-numeric part (for example '1.0.0-beta' or 'v1.2') will now raise ValueError instead of being compared as a string.",
+              "Versions that differ only by trailing '.0' parts are not treated as equal."
+            ],
+            "status": "rejected",
+            "created_at": "2026-11-08T00:04:08.961951Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 811,
+              "cache_read_input_tokens": 1876,
+              "cache_creation_input_tokens": 0
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "versions.py"
+            ],
+            "added_lines": 5,
+            "removed_lines": 1,
+            "diff_sha256": "3f816618fff993c47b66235f1ff4e27bb1bb435460dbf528ec3b4a1e1a93b9ed"
+          },
+          "workspace": {
+            "workspace_id": "180fe045-patched-1-qghqmeuc",
+            "label": "patched-1",
+            "snapshot_hash": "ffbf600f27ab61dda5078d4ce3f9a79bd3136907594ff9fe764ea9f328adab04",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "versions.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.018
+          },
+          "verification": {
+            "verification_id": "4db25b7f-575c-4df8-ab49-4317682ba27e",
+            "patch_id": "cedacb78-23c7-44f4-a143-eac8bdba9af6",
+            "status": "rejected",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.018,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "versions.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 1,
+                "stdout": "..F..                                                                    [100%]\n=================================== FAILURES ===================================\n__________________ test_release_candidates_compare_by_number ___________________\n\n    def test_release_candidates_compare_by_number():\n>       assert is_newer(\"2.0.0-rc2\", \"2.0.0-rc1\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntest_versions.py:13: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nversions.py:7: in is_newer\n    return _parse(candidate) > _parse(current)\n           ^^^^^^^^^^^^^^^^^\nversions.py:2: in _parse\n    return tuple(int(part) for part in version.split(\".\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n.0 = <list_iterator object at 0x1074893c0>\n\n>   return tuple(int(part) for part in version.split(\".\"))\n                 ^^^^^^^^^\nE   ValueError: invalid literal for int() with base 10: '0-rc2'\n\nversions.py:2: ValueError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_release_candidates_compare_by_number - ValueErr...\n1 failed, 4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.178,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_versions.py::test_update_available",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "failed",
+                "required": true,
+                "exit_code": 1,
+                "stdout": "..F..                                                                    [100%]\n=================================== FAILURES ===================================\n__________________ test_release_candidates_compare_by_number ___________________\n\n    def test_release_candidates_compare_by_number():\n>       assert is_newer(\"2.0.0-rc2\", \"2.0.0-rc1\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntest_versions.py:13: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nversions.py:7: in is_newer\n    return _parse(candidate) > _parse(current)\n           ^^^^^^^^^^^^^^^^^\nversions.py:2: in _parse\n    return tuple(int(part) for part in version.split(\".\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n.0 = <list_iterator object at 0x1074893c0>\n\n>   return tuple(int(part) for part in version.split(\".\"))\n                 ^^^^^^^^^\nE   ValueError: invalid literal for int() with base 10: '0-rc2'\n\nversions.py:2: ValueError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_release_candidates_compare_by_number - ValueErr...\n1 failed, 4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.178,
+                "reason": "test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'",
+                "details": {
+                  "regressed": [
+                    "test_versions.py::test_release_candidates_compare_by_number"
+                  ],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 2 preserved, 1 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.039,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "failed",
+                "required": true,
+                "exit_code": 1,
+                "stdout": "..F..                                                                    [100%]\n=================================== FAILURES ===================================\n__________________ test_release_candidates_compare_by_number ___________________\n\n    def test_release_candidates_compare_by_number():\n>       assert is_newer(\"2.0.0-rc2\", \"2.0.0-rc1\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntest_versions.py:13: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nversions.py:7: in is_newer\n    return _parse(candidate) > _parse(current)\n           ^^^^^^^^^^^^^^^^^\nversions.py:2: in _parse\n    return tuple(int(part) for part in version.split(\".\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n.0 = <list_iterator object at 0x1099c53f0>\n\n>   return tuple(int(part) for part in version.split(\".\"))\n                 ^^^^^^^^^\nE   ValueError: invalid literal for int() with base 10: '0-rc2'\n\nversions.py:2: ValueError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_release_candidates_compare_by_number - ValueErr...\n1 failed, 4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.128,
+                "reason": "1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']",
+                "details": {
+                  "regressed": [
+                    "test_versions.py::test_release_candidates_compare_by_number"
+                  ],
+                  "still_failing": [],
+                  "summary": "2 fixed, 2 preserved, 1 regressed, 0 still failing; all bug tests pass",
+                  "tests": 5
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_versions.py"
+                  ],
+                  "targets": [
+                    "test_versions.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.132,
+                  "started_at": "2026-11-08T00:04:01.468196Z",
+                  "tests": {
+                    "test_versions.py::test_patch_bump": {
+                      "test_id": "test_versions.py::test_patch_bump",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_same_version_is_not_newer": {
+                      "test_id": "test_versions.py::test_same_version_is_not_newer",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_release_candidates_compare_by_number": {
+                      "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_double_digit_minor_version": {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_update_available": {
+                      "test_id": "test_versions.py::test_update_available",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_versions.py"
+                  ],
+                  "targets": [
+                    "test_versions.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.128,
+                  "started_at": "2026-11-08T00:04:01.597341Z",
+                  "tests": {
+                    "test_versions.py::test_patch_bump": {
+                      "test_id": "test_versions.py::test_patch_bump",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_same_version_is_not_newer": {
+                      "test_id": "test_versions.py::test_same_version_is_not_newer",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_release_candidates_compare_by_number": {
+                      "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_double_digit_minor_version": {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_update_available": {
+                      "test_id": "test_versions.py::test_update_available",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.131,
+                "started_at": "2026-11-08T00:04:01.729510Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "failed",
+                    "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "failed",
+                    "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_versions.py"
+                ],
+                "targets": [
+                  "test_versions.py"
+                ],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "..F..                                                                    [100%]\n=================================== FAILURES ===================================\n__________________ test_release_candidates_compare_by_number ___________________\n\n    def test_release_candidates_compare_by_number():\n>       assert is_newer(\"2.0.0-rc2\", \"2.0.0-rc1\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntest_versions.py:13: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nversions.py:7: in is_newer\n    return _parse(candidate) > _parse(current)\n           ^^^^^^^^^^^^^^^^^\nversions.py:2: in _parse\n    return tuple(int(part) for part in version.split(\".\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n.0 = <list_iterator object at 0x1074893c0>\n\n>   return tuple(int(part) for part in version.split(\".\"))\n                 ^^^^^^^^^\nE   ValueError: invalid literal for int() with base 10: '0-rc2'\n\nversions.py:2: ValueError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_release_candidates_compare_by_number - ValueErr...\n1 failed, 4 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.178,
+                "started_at": "2026-11-08T00:04:09.182675Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "failed",
+                    "message": "ValueError: invalid literal for int() with base 10: '0-rc2'",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.041,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "..F..                                                                    [100%]\n=================================== FAILURES ===================================\n__________________ test_release_candidates_compare_by_number ___________________\n\n    def test_release_candidates_compare_by_number():\n>       assert is_newer(\"2.0.0-rc2\", \"2.0.0-rc1\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntest_versions.py:13: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nversions.py:7: in is_newer\n    return _parse(candidate) > _parse(current)\n           ^^^^^^^^^^^^^^^^^\nversions.py:2: in _parse\n    return tuple(int(part) for part in version.split(\".\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n.0 = <list_iterator object at 0x1099c53f0>\n\n>   return tuple(int(part) for part in version.split(\".\"))\n                 ^^^^^^^^^\nE   ValueError: invalid literal for int() with base 10: '0-rc2'\n\nversions.py:2: ValueError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_release_candidates_compare_by_number - ValueErr...\n1 failed, 4 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.128,
+                "started_at": "2026-11-08T00:04:09.391755Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "failed",
+                    "message": "ValueError: invalid literal for int() with base 10: '0-rc2'",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "before": "passed",
+                    "after": "failed",
+                    "classification": "regressed",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_update_available",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "test_versions.py::test_double_digit_minor_version",
+                  "test_versions.py::test_update_available"
+                ],
+                "regressed": [
+                  "test_versions.py::test_release_candidates_compare_by_number"
+                ],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_versions.py::test_double_digit_minor_version",
+                  "test_versions.py::test_update_available"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 2 preserved, 1 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_versions.py::test_double_digit_minor_version",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_versions.py::test_patch_bump",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                  "before": "passed",
+                  "after": "failed",
+                  "classification": "regressed",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_same_version_is_not_newer",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_update_available",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "regressed": [
+                "test_versions.py::test_release_candidates_compare_by_number"
+              ],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 2 preserved, 1 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "Rejected: regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'; full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']",
+            "failure_reasons": [
+              "regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'",
+              "full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']"
+            ],
+            "duration_seconds": 0.388,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_backend": {
+                "backend": "local",
+                "isolated": false,
+                "resource_limits": {
+                  "RLIMIT_CPU": 120,
+                  "RLIMIT_AS": 2147483648,
+                  "RLIMIT_FSIZE": 209715200,
+                  "RLIMIT_NOFILE": 256
+                }
+              },
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_versions.py"
+              ],
+              "snapshot_hash": "ffbf600f27ab61dda5078d4ce3f9a79bd3136907594ff9fe764ea9f328adab04",
+              "source_revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "3f816618fff993c47b66235f1ff4e27bb1bb435460dbf528ec3b4a1e1a93b9ed"
+            }
+          },
+          "failure_reason": "rejected",
+          "summary": "Rejected: regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'; full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']",
+          "feedback_from": [],
+          "feedback_reasons": []
+        },
+        {
+          "attempt_number": 2,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "1877c085-a260-48c0-b77b-4a22b501bb48",
+            "investigation_id": "0f54cb67-bd1a-5549-b046-443ec155fde8",
+            "repository_id": "bench-bug-012-versions",
+            "execution_id": "180fe045-8c66-424d-8a8d-c50847872181",
+            "attempt_number": 2,
+            "description": "Replaces the raw string comparison in is_newer with a parsed version key. The key compares the dotted release numbers as integers and pre-release suffixes such as '-rc2' token by token, so their numbers also compare as integers.",
+            "unified_diff": "--- a/versions.py\n+++ b/versions.py\n@@ -1,6 +1,25 @@\n+import re\n+\n+\n+def _parse(version: str) -> tuple:\n+    \"\"\"Build a comparison key: numeric release parts, then pre-release tag.\"\"\"\n+    core, _, pre = version.partition(\"-\")\n+    numbers = [int(part) for part in core.split(\".\")]\n+    while len(numbers) > 1 and numbers[-1] == 0:\n+        numbers.pop()\n+    if not pre:\n+        # A final release sorts after any pre-release of the same version.\n+        return tuple(numbers), (1,)\n+    tokens = tuple(\n+        (0, int(token), \"\") if token.isdigit() else (1, 0, token)\n+        for token in re.findall(r\"\\d+|[^\\d.]+\", pre)\n+    )\n+    return tuple(numbers), (0, tokens)\n+\n+\n def is_newer(candidate: str, current: str) -> bool:\n     \"\"\"True when ``candidate`` is a later release than ``current``.\"\"\"\n-    return candidate > current\n+    return _parse(candidate) > _parse(current)\n \n \n def needs_update(installed: str, available: list[str]) -> bool:\n",
+            "affected_files": [
+              "versions.py"
+            ],
+            "rationale": "The root cause is that is_newer compared version strings character by character, so '1.10.0' < '1.9.0'. Comparing integer tuples of the release parts fixes that. The previous attempt crashed because it passed the whole string to int(), which fails on pre-release versions like '2.0.0-rc2'. This version splits the pre-release suffix off before converting the release parts to integers. It then splits the suffix into text and number pieces, so rc2 < rc10, and puts a final release after its pre-releases, as semantic versioning does. '2.0.0-rc2' still counts as newer than '2.0.0-rc1'.",
+            "assumptions": [
+              "Version strings look like 'X.Y.Z', optionally followed by a pre-release suffix after '-' (e.g. '-rc2').",
+              "A final release (e.g. '2.0.0') counts as newer than its pre-releases (e.g. '2.0.0-rc1'), as in semantic versioning.",
+              "Trailing zero parts are ignored, so '1.10' and '1.10.0' count as the same version and neither is newer than the other."
+            ],
+            "risks": [
+              "The release part must be purely numeric: strings like 'v1.2.0' or '1.2.x' now raise ValueError.",
+              "Build metadata after '+' is not removed. It is treated as part of the release or pre-release text, which can raise ValueError (e.g. '1.0.0+build1') or affect the ordering.",
+              "Pre-release ordering follows semantic versioning (numbers sort before text). It may differ from what the old string comparison gave for unusual tags."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-08T00:04:26.816480Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 1975,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 3566
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "versions.py"
+            ],
+            "added_lines": 20,
+            "removed_lines": 1,
+            "diff_sha256": "64963e727f86196cd6c4b0f61e1f880fd296a8f504144c62bc314d5b2eec323c"
+          },
+          "workspace": {
+            "workspace_id": "180fe045-patched-2-tum7lyx9",
+            "label": "patched-2",
+            "snapshot_hash": "ffbf600f27ab61dda5078d4ce3f9a79bd3136907594ff9fe764ea9f328adab04",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "versions.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.019
+          },
+          "verification": {
+            "verification_id": "0afff5b2-8dbf-4cf0-a133-dbe08480a7fe",
+            "patch_id": "1877c085-a260-48c0-b77b-4a22b501bb48",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.019,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "versions.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": ".....                                                                    [100%]\n5 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.185,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_versions.py::test_update_available",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": ".....                                                                    [100%]\n5 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.185,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.077,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": ".....                                                                    [100%]\n5 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.129,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "2 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 5
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_versions.py"
+                  ],
+                  "targets": [
+                    "test_versions.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.132,
+                  "started_at": "2026-11-08T00:04:01.468196Z",
+                  "tests": {
+                    "test_versions.py::test_patch_bump": {
+                      "test_id": "test_versions.py::test_patch_bump",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_same_version_is_not_newer": {
+                      "test_id": "test_versions.py::test_same_version_is_not_newer",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_release_candidates_compare_by_number": {
+                      "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_double_digit_minor_version": {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_update_available": {
+                      "test_id": "test_versions.py::test_update_available",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_versions.py"
+                  ],
+                  "targets": [
+                    "test_versions.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.128,
+                  "started_at": "2026-11-08T00:04:01.597341Z",
+                  "tests": {
+                    "test_versions.py::test_patch_bump": {
+                      "test_id": "test_versions.py::test_patch_bump",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_same_version_is_not_newer": {
+                      "test_id": "test_versions.py::test_same_version_is_not_newer",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_release_candidates_compare_by_number": {
+                      "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_double_digit_minor_version": {
+                      "test_id": "test_versions.py::test_double_digit_minor_version",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_versions.py::test_update_available": {
+                      "test_id": "test_versions.py::test_update_available",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "...FF                                                                    [100%]\n=================================== FAILURES ===================================\n_______________________ test_double_digit_minor_version ________________________\n\n    def test_double_digit_minor_version():\n>       assert is_newer(\"1.10.0\", \"1.9.0\")\nE       AssertionError: assert False\nE        +  where False = is_newer('1.10.0', '1.9.0')\n\ntest_versions.py:18: AssertionError\n____________________________ test_update_available _____________________________\n\n    def test_update_available():\n>       assert needs_update(\"1.9.0\", [\"1.8.0\", \"1.10.0\"])\nE       AssertionError: assert False\nE        +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])\n\ntest_versions.py:22: AssertionError\n=========================== short test summary info ============================\nFAILED test_versions.py::test_double_digit_minor_version - AssertionError: as...\nFAILED test_versions.py::test_update_available - AssertionError: assert False\n2 failed, 3 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.131,
+                "started_at": "2026-11-08T00:04:01.729510Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "failed",
+                    "message": "AssertionError: assert False\n +  where False = is_newer('1.10.0', '1.9.0')",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "failed",
+                    "message": "AssertionError: assert False\n +  where False = needs_update('1.9.0', ['1.8.0', '1.10.0'])",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_versions.py"
+                ],
+                "targets": [
+                  "test_versions.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": ".....                                                                    [100%]\n5 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.185,
+                "started_at": "2026-11-08T00:04:27.068767Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.077,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.041,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": ".....                                                                    [100%]\n5 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.129,
+                "started_at": "2026-11-08T00:04:27.276719Z",
+                "tests": {
+                  "test_versions.py::test_patch_bump": {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_same_version_is_not_newer": {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_release_candidates_compare_by_number": {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_double_digit_minor_version": {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_versions.py::test_update_available": {
+                    "test_id": "test_versions.py::test_update_available",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_versions.py::test_double_digit_minor_version",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_versions.py::test_patch_bump",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_same_version_is_not_newer",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_versions.py::test_update_available",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "test_versions.py::test_double_digit_minor_version",
+                  "test_versions.py::test_update_available"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_versions.py::test_double_digit_minor_version",
+                  "test_versions.py::test_update_available"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_versions.py::test_double_digit_minor_version",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_versions.py::test_patch_bump",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_release_candidates_compare_by_number",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_same_version_is_not_newer",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_versions.py::test_update_available",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_versions.py::test_double_digit_minor_version",
+                "test_versions.py::test_update_available"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_versions.py::test_double_digit_minor_version, test_versions.py::test_update_available) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.394,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_backend": {
+                "backend": "local",
+                "isolated": false,
+                "resource_limits": {
+                  "RLIMIT_CPU": 120,
+                  "RLIMIT_AS": 2147483648,
+                  "RLIMIT_FSIZE": 209715200,
+                  "RLIMIT_NOFILE": 256
+                }
+              },
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_versions.py"
+              ],
+              "snapshot_hash": "ffbf600f27ab61dda5078d4ce3f9a79bd3136907594ff9fe764ea9f328adab04",
+              "source_revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "64963e727f86196cd6c4b0f61e1f880fd296a8f504144c62bc314d5b2eec323c"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_versions.py::test_double_digit_minor_version, test_versions.py::test_update_available) and every required check passed in an isolated workspace. The original repository was not modified.",
+          "feedback_from": [
+            1
+          ],
+          "feedback_reasons": [
+            "regression_tests: test_versions.py::test_release_candidates_compare_by_number passed -> failed: ValueError: invalid literal for int() with base 10: '0-rc2'",
+            "full_test_suite: 1 test(s) newly fail in the full suite: ['test_versions.py::test_release_candidates_compare_by_number']"
+          ]
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "ffbf600f27ab61dda5078d4ce3f9a79bd3136907594ff9fe764ea9f328adab04",
+        "file_count": 2,
+        "total_bytes": 791,
+        "revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+        "dirty": true,
+        "skipped": [],
+        "captured_at": "2026-11-08T00:04:01.333534Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_versions.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module versions.py",
+              "named after affected file versions.py",
+              "imports an affected symbol",
+              "graph (in-memory): test_double_digit_minor_version, test_patch_bump, test_release_candidates_compare_by_number (+2 more) reach the patched code; best path test_double_digit_minor_version -> is_newer (1 hop, score 1.00)"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0,
+            "score": 0.0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": [],
+        "graph": {
+          "source": "in_memory",
+          "seeds": 2,
+          "suggestions": [
+            {
+              "target": "test_versions.py",
+              "reason": "graph (in-memory): test_double_digit_minor_version, test_patch_bump, test_release_candidates_compare_by_number (+2 more) reach the patched code; best path test_double_digit_minor_version -> is_newer (1 hop, score 1.00)",
+              "priority": 3,
+              "score": 1.0
+            }
+          ],
+          "warnings": [],
+          "stale_entities": []
+        }
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_versions.py::test_double_digit_minor_version",
+          "test_versions.py::test_update_available"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 5
+      },
+      "summary": "Attempt 2 of 2 attempt(s): The patch fixes the original failure (test_versions.py::test_double_digit_minor_version, test_versions.py::test_update_available) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 25.96,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 8,
+        "output_tokens": 2786,
+        "cache_read_input_tokens": 1876,
+        "cache_creation_input_tokens": 3566
+      },
+      "original_repository_modified": false,
+      "llm_budget": {
+        "max_requests": 6,
+        "max_seconds": 300.0,
+        "max_cost_usd": 1.0,
+        "requests": 2,
+        "seconds_spent": 24.653,
+        "cost_spent_usd": 0.073957,
+        "exhausted_by": null,
+        "cost_estimate_exceeded": false,
+        "calls": [
+          {
+            "label": "attempt 1, call 1",
+            "model": "claude-opus-5-5",
+            "outcome": "ok",
+            "estimated_cost_usd": 0.32918,
+            "actual_cost_usd": 0.016611,
+            "charged_cost_usd": 0.016611,
+            "seconds": 7.232,
+            "timeout_clipped": false,
+            "cost_estimate_exceeded": false
+          },
+          {
+            "label": "attempt 2, call 1",
+            "model": "claude-opus-5-5",
+            "outcome": "ok",
+            "estimated_cost_usd": 0.33671,
+            "actual_cost_usd": 0.057346,
+            "charged_cost_usd": 0.057346,
+            "seconds": 17.421,
+            "timeout_clipped": false,
+            "cost_estimate_exceeded": false
+          }
+        ]
+      }
+    },
+    {
+      "execution_id": "5fe65fbe-be47-4f11-ada1-26639d9b2afc",
+      "investigation_id": "95fe397e-4472-5da1-9815-ac61a33feb31",
+      "repository_id": "bench-bug-013-unique-emails",
+      "status": "verified",
+      "final_patch_id": "96a3e935-254c-4e2d-916d-228f284fc06d",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "96a3e935-254c-4e2d-916d-228f284fc06d",
+            "investigation_id": "95fe397e-4472-5da1-9815-ac61a33feb31",
+            "repository_id": "bench-bug-013-unique-emails",
+            "execution_id": "5fe65fbe-be47-4f11-ada1-26639d9b2afc",
+            "attempt_number": 1,
+            "description": "unique_emails now de-duplicates case-insensitively. It keeps the first-seen spelling of each address and keeps first-seen order.",
+            "unified_diff": "--- a/contacts.py\n+++ b/contacts.py\n@@ -1,3 +1,9 @@\n def unique_emails(emails: list[str]) -> list[str]:\n     \"\"\"Distinct email addresses, in first-seen order. Addresses differing only in case are the same.\"\"\"\n-    return list(dict.fromkeys(emails))\n+    seen: set[str] = set()\n+    result: list[str] = []\n+    for email in emails:\n+        key = email.lower()\n+        if key not in seen:\n+            seen.add(key)\n+            result.append(email)\n+    return result\n",
+            "affected_files": [
+              "contacts.py"
+            ],
+            "rationale": "The root cause is that dict.fromkeys compares raw strings, so case variants count as different addresses. The new code builds the de-duplication key with str.lower() and still returns the original string the first time each key appears. This matches the docstring and the expected result ['Ada@x.com', 'bob@x.com'].",
+            "assumptions": [
+              "Each address is returned in the spelling it had the first time it appeared, as the failing test expects.",
+              "The whole address, including the part before the @, is compared case-insensitively, as the docstring says.",
+              "Case is compared with str.lower(), not str.casefold(). This is the more conservative option for ASCII email addresses."
+            ],
+            "risks": [
+              "Some mail systems treat the part before the @ as case-sensitive. Such addresses would now be merged, but the docstring says this is the intended behaviour.",
+              "Spaces around an address are not trimmed, so ' ada@x.com' and 'ada@x.com' still count as different addresses."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-08T00:04:34.899355Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 758,
+              "cache_read_input_tokens": 1874,
+              "cache_creation_input_tokens": 0
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [
+              "contacts.py: hunk header said -1,3 +1,9; the body has 3 old and 10 new lines (counts corrected)"
+            ],
+            "affected_files": [
+              "contacts.py"
+            ],
+            "added_lines": 8,
+            "removed_lines": 1,
+            "diff_sha256": "f07b57a5e913ef33ee55a0053d9ef362a9f81ad2621ae549b907a35d5a91f917"
+          },
+          "workspace": {
+            "workspace_id": "5fe65fbe-patched-1-mch1bh83",
+            "label": "patched-1",
+            "snapshot_hash": "d387938e60d4ffb16455c6dd4fd64ef5562c390da1fa56e9fe42084a6d316717",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "contacts.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.021
+          },
+          "verification": {
+            "verification_id": "b5d75a12-c889-40a1-a2bf-8560e427dd05",
+            "patch_id": "96a3e935-254c-4e2d-916d-228f284fc06d",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.021,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "contacts.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.129,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.129,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.037,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.131,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_contacts.py"
+                  ],
+                  "targets": [
+                    "test_contacts.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_case_variants_are_duplicates _______________________\n\n    def test_case_variants_are_duplicates():\n>       assert unique_emails([\"Ada@x.com\", \"ada@X.com\", \"bob@x.com\"]) == [\"Ada@x.com\", \"bob@x.com\"]\nE       AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\nE         \nE         At index 1 diff: 'ada@X.com' != 'bob@x.com'\nE         Left contains one more item: 'bob@x.com'\nE         Use -v to get more diff\n\ntest_contacts.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_contacts.py::test_case_variants_are_duplicates - AssertionError: ...\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.131,
+                  "started_at": "2026-11-08T00:04:27.736187Z",
+                  "tests": {
+                    "test_contacts.py::test_exact_duplicates_removed": {
+                      "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_first_seen_order": {
+                      "test_id": "test_contacts.py::test_first_seen_order",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_original_spelling_is_kept": {
+                      "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_case_variants_are_duplicates": {
+                      "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\n  \n  At index 1 diff: 'ada@X.com' != 'bob@x.com'\n  Left contains one more item: 'bob@x.com'\n  Use -v to get more diff",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_contacts.py"
+                  ],
+                  "targets": [
+                    "test_contacts.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_case_variants_are_duplicates _______________________\n\n    def test_case_variants_are_duplicates():\n>       assert unique_emails([\"Ada@x.com\", \"ada@X.com\", \"bob@x.com\"]) == [\"Ada@x.com\", \"bob@x.com\"]\nE       AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\nE         \nE         At index 1 diff: 'ada@X.com' != 'bob@x.com'\nE         Left contains one more item: 'bob@x.com'\nE         Use -v to get more diff\n\ntest_contacts.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_contacts.py::test_case_variants_are_duplicates - AssertionError: ...\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.181,
+                  "started_at": "2026-11-08T00:04:27.918147Z",
+                  "tests": {
+                    "test_contacts.py::test_exact_duplicates_removed": {
+                      "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_first_seen_order": {
+                      "test_id": "test_contacts.py::test_first_seen_order",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_original_spelling_is_kept": {
+                      "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    },
+                    "test_contacts.py::test_case_variants_are_duplicates": {
+                      "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                      "outcome": "failed",
+                      "message": "AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\n  \n  At index 1 diff: 'ada@X.com' != 'bob@x.com'\n  Left contains one more item: 'bob@x.com'\n  Use -v to get more diff",
+                      "duration_seconds": 0.0,
+                      "missing_module": null
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_case_variants_are_duplicates _______________________\n\n    def test_case_variants_are_duplicates():\n>       assert unique_emails([\"Ada@x.com\", \"ada@X.com\", \"bob@x.com\"]) == [\"Ada@x.com\", \"bob@x.com\"]\nE       AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\nE         \nE         At index 1 diff: 'ada@X.com' != 'bob@x.com'\nE         Left contains one more item: 'bob@x.com'\nE         Use -v to get more diff\n\ntest_contacts.py:17: AssertionError\n=========================== short test summary info ============================\nFAILED test_contacts.py::test_case_variants_are_duplicates - AssertionError: ...\n1 failed, 3 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.122,
+                "started_at": "2026-11-08T00:04:28.040902Z",
+                "tests": {
+                  "test_contacts.py::test_exact_duplicates_removed": {
+                    "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_first_seen_order": {
+                    "test_id": "test_contacts.py::test_first_seen_order",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_original_spelling_is_kept": {
+                    "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_case_variants_are_duplicates": {
+                    "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                    "outcome": "failed",
+                    "message": "AssertionError: assert ['Ada@x.com',..., 'bob@x.com'] == ['Ada@x.com', 'bob@x.com']\n  \n  At index 1 diff: 'ada@X.com' != 'bob@x.com'\n  Left contains one more item: 'bob@x.com'\n  Use -v to get more diff",
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_contacts.py::test_case_variants_are_duplicates"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_contacts.py"
+                ],
+                "targets": [
+                  "test_contacts.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.129,
+                "started_at": "2026-11-08T00:04:35.086769Z",
+                "tests": {
+                  "test_contacts.py::test_exact_duplicates_removed": {
+                    "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_first_seen_order": {
+                    "test_id": "test_contacts.py::test_first_seen_order",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_original_spelling_is_kept": {
+                    "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_case_variants_are_duplicates": {
+                    "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.037,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.04,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.131,
+                "started_at": "2026-11-08T00:04:35.296205Z",
+                "tests": {
+                  "test_contacts.py::test_exact_duplicates_removed": {
+                    "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_first_seen_order": {
+                    "test_id": "test_contacts.py::test_first_seen_order",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_original_spelling_is_kept": {
+                    "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  },
+                  "test_contacts.py::test_case_variants_are_duplicates": {
+                    "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0,
+                    "missing_module": null
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_contacts.py::test_first_seen_order",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  }
+                ],
+                "fixed": [
+                  "test_contacts.py::test_case_variants_are_duplicates"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_contacts.py::test_case_variants_are_duplicates"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_contacts.py::test_case_variants_are_duplicates",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_contacts.py::test_exact_duplicates_removed",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_contacts.py::test_first_seen_order",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_contacts.py::test_original_spelling_is_kept",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                }
+              ],
+              "fixed": [
+                "test_contacts.py::test_case_variants_are_duplicates"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_contacts.py::test_case_variants_are_duplicates"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_contacts.py::test_case_variants_are_duplicates) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.339,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_backend": {
+                "backend": "local",
+                "isolated": false,
+                "resource_limits": {
+                  "RLIMIT_CPU": 120,
+                  "RLIMIT_AS": 2147483648,
+                  "RLIMIT_FSIZE": 209715200,
+                  "RLIMIT_NOFILE": 256
+                }
+              },
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_contacts.py"
+              ],
+              "snapshot_hash": "d387938e60d4ffb16455c6dd4fd64ef5562c390da1fa56e9fe42084a6d316717",
+              "source_revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "f07b57a5e913ef33ee55a0053d9ef362a9f81ad2621ae549b907a35d5a91f917"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_contacts.py::test_case_variants_are_duplicates) and every required check passed in an isolated workspace. The original repository was not modified.",
+          "feedback_from": [],
+          "feedback_reasons": []
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "d387938e60d4ffb16455c6dd4fd64ef5562c390da1fa56e9fe42084a6d316717",
+        "file_count": 2,
+        "total_bytes": 748,
+        "revision": "322e591a93127390face0ee30dfb423a39bd70c4",
+        "dirty": true,
+        "skipped": [],
+        "captured_at": "2026-11-08T00:04:27.602300Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_contacts.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module contacts.py",
+              "named after affected file contacts.py",
+              "imports an affected symbol",
+              "graph (in-memory): test_case_variants_are_duplicates, test_exact_duplicates_removed, test_first_seen_order (+1 more) reach the patched code; best path test_case_variants_are_duplicates -> unique_emails (1 hop, score 1.00)"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0,
+            "score": 0.0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": [],
+        "graph": {
+          "source": "in_memory",
+          "seeds": 1,
+          "suggestions": [
+            {
+              "target": "test_contacts.py",
+              "reason": "graph (in-memory): test_case_variants_are_duplicates, test_exact_duplicates_removed, test_first_seen_order (+1 more) reach the patched code; best path test_case_variants_are_duplicates -> unique_emails (1 hop, score 1.00)",
+              "priority": 3,
+              "score": 1.0
+            }
+          ],
+          "warnings": [],
+          "stale_entities": []
+        }
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_contacts.py::test_case_variants_are_duplicates"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_contacts.py::test_case_variants_are_duplicates) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 7.709,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 758,
+        "cache_read_input_tokens": 1874,
+        "cache_creation_input_tokens": 0
+      },
+      "original_repository_modified": false,
+      "llm_budget": {
+        "max_requests": 6,
+        "max_seconds": 300.0,
+        "max_cost_usd": 1.0,
+        "requests": 1,
+        "seconds_spent": 6.858,
+        "cost_spent_usd": 0.015551,
+        "exhausted_by": null,
+        "cost_estimate_exceeded": false,
+        "calls": [
+          {
+            "label": "attempt 1, call 1",
+            "model": "claude-opus-5-5",
+            "outcome": "ok",
+            "estimated_cost_usd": 0.32903,
+            "actual_cost_usd": 0.015551,
+            "charged_cost_usd": 0.015551,
+            "seconds": 6.858,
+            "timeout_clipped": false,
+            "cost_estimate_exceeded": false
+          }
+        ]
+      }
+    }
+  ]
+}

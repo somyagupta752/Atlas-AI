@@ -31,8 +31,10 @@ from app.agents.repository import InvestigationNotFoundError, InvestigationRepos
 from app.agents.routes import get_llm_provider, get_trusted_test_roots
 from app.config import get_settings
 from app.database import get_db
-from app.dependencies import get_allowed_repository_roots
+from app.dependencies import get_allowed_repository_roots, get_graph_context_source
 from app.models import PatchProposalRecord
+from app.patching.budget import LLMPricingUnknownError
+from app.patching.container import ContainerLimits, ContainerTestRunner
 from app.patching.models import GeneratePatchRequest, PatchExecution, PatchLimits
 from app.patching.repository import PatchNotFoundError, PatchRepository
 from app.patching.service import (
@@ -40,7 +42,10 @@ from app.patching.service import (
     InvestigationNotEligibleError,
     PatchingService,
     PatchRequestError,
+    TestBackendUnavailableError,
 )
+from app.patching.test_execution import RuffRunner
+from app.patching.verification import VerificationEngine
 from app.patching.workspace import WorkspaceManager
 from app.retrieval.repository import ChunkRepository
 
@@ -61,6 +66,7 @@ FAILURE_RESPONSES: dict[str, tuple[int, str]] = {
     "llm_provider_error": (502, "The language model provider failed"),
     "llm_invalid_response": (502, "The language model returned an invalid patch proposal"),
     "llm_refusal": (502, "The language model declined the request"),
+    "llm_pricing_unknown": (503, "The language model's price is unknown, so its cost cannot be capped"),
     "workspace_error": (503, "An isolated workspace could not be created"),
     "persistence_error": (500, "Patch data could not be saved"),
     "internal_error": (500, "Patch generation failed because of an internal error"),
@@ -96,6 +102,7 @@ class PatchExecutionOut(BaseModel):
     duration_seconds: float
     model: str | None
     original_repository_modified: bool
+    llm_budget: dict[str, Any] | None
 
 
 class PatchSummaryOut(BaseModel):
@@ -175,6 +182,22 @@ def get_workspace_manager(request: Request) -> WorkspaceManager:
     return manager
 
 
+def get_verification_engine(limits: PatchLimits = Depends(get_patch_limits)) -> VerificationEngine:
+    """The verification engine with the configured test backend. Ruff ignores repository
+    config when untrusted repositories are allowed: that config is untrusted input."""
+    settings = get_settings()
+    untrusted = settings.patch_test_backend == "container" and settings.patch_container_allow_untrusted
+    runner = None
+    if settings.patch_test_backend == "container":
+        runner = ContainerTestRunner(limits, ContainerLimits(
+            image=settings.patch_container_image,
+            cpus=settings.patch_container_cpus,
+            memory_bytes=settings.patch_container_memory_mb * 1024**2,
+            pids_limit=settings.patch_container_pids_limit,
+        ))
+    return VerificationEngine(limits, runner=runner, ruff=RuffRunner(limits, isolated=untrusted))
+
+
 def get_patch_repository(db: Session = Depends(get_db)) -> PatchRepository:
     return PatchRepository(db)
 
@@ -186,7 +209,10 @@ def get_patching_service(
     trusted_test_roots: list[Path] = Depends(get_trusted_test_roots),
     limits: PatchLimits = Depends(get_patch_limits),
     workspaces: WorkspaceManager = Depends(get_workspace_manager),
+    graph: Any = Depends(get_graph_context_source),
+    engine: VerificationEngine = Depends(get_verification_engine),
 ) -> PatchingService:
+    settings = get_settings()
     return PatchingService(
         llm,
         DatabaseInvestigationSource(InvestigationRepository(db)),
@@ -195,6 +221,11 @@ def get_patching_service(
         patches=PatchRepository(db),
         limits=limits,
         trusted_test_roots=trusted_test_roots,
+        graph=graph,
+        engine=engine,
+        allow_untrusted_repositories=(
+            settings.patch_test_backend == "container" and settings.patch_container_allow_untrusted
+        ),
     )
 
 
@@ -235,6 +266,7 @@ def _execution_out(execution: PatchExecution) -> PatchExecutionOut:
         duration_seconds=execution.duration_seconds,
         model=execution.model,
         original_repository_modified=execution.original_repository_modified,
+        llm_budget=execution.llm_budget,
     )
 
 
@@ -261,6 +293,10 @@ def generate_patch(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except PatchRequestError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except TestBackendUnavailableError as exc:
+        raise HTTPException(status_code=503, detail="The test execution backend is not available") from exc
+    except LLMPricingUnknownError as exc:
+        raise HTTPException(status_code=503, detail=FAILURE_RESPONSES["llm_pricing_unknown"][1]) from exc
     out = _execution_out(execution)
     if execution.status == "failed":
         status, message = FAILURE_RESPONSES.get(execution.failure_reason or "", (500, "Patch generation failed"))

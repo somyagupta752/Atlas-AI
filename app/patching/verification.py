@@ -159,11 +159,19 @@ class VerificationEngine:
             problems.append(f"{len(flaky)} test(s) changed outcome between baseline runs (flaky): {sorted(flaky)[:5]}")
 
         bug_tests: list[str] = []
+        environment_failures = self._environment_failures(workspace, completed[0]) if completed else {}
+        if environment_failures:
+            modules = sorted(set(environment_failures.values()))
+            problems.append(
+                f"{len(environment_failures)} test(s) fail only because the test environment lacks "
+                f"{', '.join(repr(m) for m in modules)}, which is not part of the repository. That is an "
+                "environment problem, not the bug"
+            )
         if not selection.bug_items:
             problems.append("The investigation recorded no failing test, so the bug cannot be reproduced")
         for item in selection.bug_items:
             matching = [t for t in outcomes if _matches(t, item.target, item.bug_test_names)]
-            failing = [t for t in matching if outcomes[t] in FAILING]
+            failing = [t for t in matching if outcomes[t] in FAILING and t not in environment_failures]
             flaky_bug = [t for t in failing if t in flaky]
             if flaky_bug:
                 problems.append(f"Bug test(s) are flaky in the baseline: {flaky_bug[:5]}")
@@ -193,6 +201,18 @@ class VerificationEngine:
             reproducible=reproducible and bool(runs),
             problems=problems,
         )
+
+    @staticmethod
+    def _environment_failures(workspace: Workspace, run: TestSuiteRun) -> dict[str, str]:
+        """Failing tests whose only problem is a missing third-party module: test id -> module."""
+        out = {}
+        for test_id, result in run.tests.items():
+            if result.outcome not in FAILING or not result.missing_module:
+                continue
+            top = result.missing_module.split(".")[0]
+            if not ((workspace.repo / f"{top}.py").exists() or (workspace.repo / top).is_dir()):
+                out[test_id] = result.missing_module
+        return out
 
     # --- verification --------------------------------------------------------------------
 
@@ -268,6 +288,7 @@ class VerificationEngine:
             duration_seconds=round(time.monotonic() - start, 3),
             environment={
                 **environment_identity(),
+                "test_backend": self.runner.identity() if hasattr(self.runner, "identity") else {"backend": "custom"},
                 "test_command": PytestRunner.command_identity(selection.targets),
                 "snapshot_hash": baseline_workspace.snapshot.root_hash,
                 "source_revision": baseline_workspace.snapshot.revision,

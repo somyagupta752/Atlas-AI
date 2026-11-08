@@ -31,6 +31,15 @@ from app.agents.llm import (
     LLMUsage,
 )
 from app.agents.schemas import RootCauseAnalysis
+from app.patching.budget import (
+    LLMBudget,
+    LLMBudgetExhaustedError,
+    LLMPricingUnknownError,
+    estimate_input_tokens,
+    model_prices,
+    usage_cost,
+    worst_case_cost,
+)
 from app.patching.models import PatchDraft, PatchProposal
 from app.tools.base import redact_secrets, truncate_text
 
@@ -104,9 +113,11 @@ Answer by calling submit_patch exactly once.\
 class PatchGenerationError(Exception):
     """The model did not produce a usable proposal. ``kind`` is safe to show and store."""
 
-    def __init__(self, message: str, kind: str, *, retryable: bool = False, usage: LLMUsage | None = None) -> None:
+    def __init__(self, message: str, kind: str, *, retryable: bool = False, usage: LLMUsage | None = None,
+                 budget_limit: str | None = None) -> None:
         super().__init__(message)
         self.kind = kind
+        self.budget_limit = budget_limit  # "requests" | "seconds" | "cost" when kind == "budget_exhausted"
         self.retryable = retryable
         self.usage = usage or LLMUsage()
 
@@ -119,6 +130,7 @@ class RepositoryContext:
     bug_report: str
     modifiable_files: dict[str, str]  # path -> source
     test_files: dict[str, str] = field(default_factory=dict)  # read-only context
+    withheld_test_files: int = 0  # selected tests whose contents are not shown (they still run)
     failing_tests: list[dict[str, Any]] = field(default_factory=list)  # baseline bug tests with messages
 
 
@@ -204,6 +216,11 @@ def build_user_message(
             budget -= len(listing)
             tests.append(f'<file path="{path}" modifiable="false">\n{listing}\n</file>')
         parts.append("\n".join(tests))
+    if context.withheld_test_files:
+        parts.append(
+            f"{context.withheld_test_files} related test file(s) are not shown. They will run against your patch, "
+            "together with the failing tests above. Preserve existing behaviour that tests may rely on."
+        )
 
     if history:
         feedback = ["Earlier attempts failed. Do not repeat them; address the failures below."]
@@ -254,8 +271,11 @@ def parse_draft(response: LLMResponse) -> PatchDraft:
 
 class PatchGenerator:
     def __init__(self, llm: LLMProvider, *, timeout_seconds: float = 120.0, repair_attempts: int = 1,
-                 max_source_bytes: int = 80_000, max_feedback_bytes: int = 12_000) -> None:
+                 max_source_bytes: int = 80_000, max_feedback_bytes: int = 12_000,
+                 max_output_tokens: int | None = None) -> None:
         self._llm = llm
+        # The worst-case output of one call, for the budget: the provider's own limit when it has one.
+        self._max_output_tokens = getattr(llm, "max_tokens", None) or max_output_tokens or 16_000
         self._timeout = timeout_seconds
         self._repair_attempts = repair_attempts
         self._max_source_bytes = max_source_bytes
@@ -270,8 +290,13 @@ class PatchGenerator:
         attempt_number: int,
         history: list[AttemptFeedback] | None = None,
         timeout_seconds: float | None = None,
+        budget: LLMBudget | None = None,
     ) -> GeneratedPatch:
-        """One proposal. Raises ``PatchGenerationError``. Never touches the filesystem."""
+        """One proposal. Raises ``PatchGenerationError``. Never touches the filesystem.
+
+        With a ``budget``, every model call (repairs included) is reserved first and
+        settled afterwards; a call that might not fit is never made.
+        """
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": build_user_message(
@@ -285,23 +310,7 @@ class PatchGenerator:
         last_problem = "no response"
         for _ in range(1 + self._repair_attempts):
             calls += 1
-            try:
-                response = self._llm.generate(messages, [SUBMIT_PATCH_TOOL], timeout=timeout)
-            except LLMTimeoutError:
-                raise PatchGenerationError("The language model did not respond in time", "timeout",
-                                           retryable=True, usage=usage) from None
-            except LLMRateLimitError:
-                raise PatchGenerationError("The language model is rate limited", "rate_limited",
-                                           retryable=True, usage=usage) from None
-            except LLMConfigurationError:
-                raise PatchGenerationError("The language model is not available", "configuration_error",
-                                           usage=usage) from None
-            except LLMInvalidResponseError:
-                raise PatchGenerationError("The language model returned an invalid response", "invalid_response",
-                                           usage=usage) from None
-            except LLMError as exc:
-                raise PatchGenerationError("The language model provider failed", "provider_error",
-                                           retryable=exc.retryable, usage=usage) from None
+            response = self._call(messages, timeout, usage, budget, f"attempt {attempt_number}, call {calls}")
             usage = usage + response.usage
             if response.finish_reason == "refusal":
                 raise PatchGenerationError("The language model declined the request", "refusal", usage=usage)
@@ -339,3 +348,60 @@ class PatchGenerator:
             return GeneratedPatch(proposal=proposal, draft=draft, usage=usage, llm_calls=calls)
         raise PatchGenerationError(f"The model's patch proposal was invalid: {last_problem}"[:500],
                                    "invalid_response", usage=usage)
+
+    def _call(self, messages, timeout: float, usage: LLMUsage, budget: LLMBudget | None, label: str) -> LLMResponse:
+        reservation = None
+        prices = model_prices(self._llm)
+        if budget is not None:
+            estimate = None
+            if prices is not None:
+                estimate = worst_case_cost(prices, estimate_input_tokens(messages, [SUBMIT_PATCH_TOOL]),
+                                           self._max_output_tokens)
+            try:
+                reservation = budget.reserve(estimated_cost=estimate, timeout=timeout, label=label)
+            except LLMBudgetExhaustedError as exc:
+                raise PatchGenerationError(f"The LLM budget is exhausted: {exc}", "budget_exhausted",
+                                           usage=usage, budget_limit=exc.limit) from None
+            except LLMPricingUnknownError:
+                raise PatchGenerationError("A cost cap is set, but the model's price is unknown",
+                                           "pricing_unknown", usage=usage) from None
+            timeout = reservation.seconds
+
+        def settle(outcome: str, response: LLMResponse | None = None) -> None:
+            if budget is None or reservation is None:
+                return
+            actual = None
+            if response is not None:
+                actual_prices = model_prices(self._llm, response.model) or prices
+                actual = usage_cost(actual_prices, response.usage) if actual_prices else None
+            budget.settle(reservation, actual_cost=actual, outcome=outcome,
+                          model=(response.model if response else None) or getattr(self._llm, "model", None))
+
+        try:
+            response = self._llm.generate(messages, [SUBMIT_PATCH_TOOL], timeout=timeout)
+        except LLMTimeoutError:
+            settle("timeout")
+            if reservation is not None and reservation.clipped:
+                # The budget, not the model, cut this call short.
+                raise PatchGenerationError("The LLM time budget ran out during the model call",
+                                           "budget_exhausted", usage=usage, budget_limit="seconds") from None
+            raise PatchGenerationError("The language model did not respond in time", "timeout",
+                                       retryable=True, usage=usage) from None
+        except LLMRateLimitError:
+            settle("error")
+            raise PatchGenerationError("The language model is rate limited", "rate_limited",
+                                       retryable=True, usage=usage) from None
+        except LLMConfigurationError:
+            settle("error")
+            raise PatchGenerationError("The language model is not available", "configuration_error",
+                                       usage=usage) from None
+        except LLMInvalidResponseError:
+            settle("error")
+            raise PatchGenerationError("The language model returned an invalid response", "invalid_response",
+                                       usage=usage) from None
+        except LLMError as exc:
+            settle("error")
+            raise PatchGenerationError("The language model provider failed", "provider_error",
+                                       retryable=exc.retryable, usage=usage) from None
+        settle("ok", response)
+        return response

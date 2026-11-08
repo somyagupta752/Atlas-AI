@@ -74,6 +74,25 @@ class Settings(BaseSettings):
     patch_max_check_output_bytes: int = Field(default=100_000, ge=1_000, le=10_000_000)
     patch_check_timeout_seconds: float = Field(default=60.0, gt=0, le=600)
     patch_llm_timeout_seconds: float = Field(default=120.0, gt=0, le=600)
+    # Global LLM budget per request, across every attempt and repair call. Before each
+    # call its worst-case cost is reserved; a call that might not fit is not made.
+    patch_max_llm_requests: int = Field(default=6, ge=1, le=100)
+    patch_max_llm_seconds: float = Field(default=300.0, gt=0, le=7200)
+    patch_max_llm_cost_usd: float = Field(default=1.0, gt=0, le=100)
+    # Graph-based test discovery: Neo4j when it is current, else an in-memory graph of the source.
+    patch_graph_test_discovery: bool = True
+    patch_graph_max_depth: int = Field(default=3, ge=1, le=6)
+    patch_max_graph_test_files: int = Field(default=10, ge=1, le=100)
+    # Where repository tests run. "local": a child process of Atlas (not a sandbox).
+    # "container": one disposable Docker container per run (docker/test-runner.Dockerfile).
+    patch_test_backend: Literal["local", "container"] = "local"
+    patch_container_image: str = "atlas-ai-test-runner:py3.12.13-pytest9.2.0"
+    patch_container_cpus: float = Field(default=1.0, gt=0, le=16)
+    patch_container_memory_mb: int = Field(default=1024, ge=64, le=65536)
+    patch_container_pids_limit: int = Field(default=256, ge=16, le=10000)
+    # With the container backend only: verify repositories outside AGENT_TRUSTED_TEST_ROOTS
+    # (still inside ALLOWED_REPOSITORY_ROOTS). A container is a boundary, not a guarantee.
+    patch_container_allow_untrusted: bool = False
     patch_baseline_runs: int = Field(default=2, ge=1, le=5)
     patch_timeout_policy: Literal["reject", "inconclusive"] = "reject"
     patch_require_ruff: bool = True

@@ -280,3 +280,33 @@ def test_exhausted_time_budget_is_inconclusive(verify):
 def test_decide(checks, expected):
     built = [VerificationCheck(name=n, status=s, required=r) for n, s, r in checks]
     assert decide(built, FAST)[0] == expected
+
+
+def test_missing_third_party_dependency_is_not_a_reproduced_bug(write_repo, workspaces):
+    root = write_repo({"mod.py": "import not_installed_pkg\n\n\ndef f():\n    return 1 / 0\n",
+                       "test_mod.py": "from mod import f\n\n\ndef test_f():\n    assert f() == 1\n"}, name="dep")
+    engine = VerificationEngine(FAST)
+    workspace = workspaces.create(root, execution_id="e", label="baseline")
+    analysis = make_analysis("i", affected_files=["mod.py"], evidence=[], tests_run=[
+        __import__("app.agents.schemas", fromlist=["TestRunRecord"]).TestRunRecord(
+            observation_id="o", test_path="test_mod.py", exit_code=1, timed_out=False, duration_seconds=0.1,
+            outcome="failed")])
+    selection = select_tests(workspace.repo, analysis, affected_files=["mod.py"], include_full_suite=False)
+    baseline = engine.capture_baseline(workspace, selection, time.monotonic() + 60)
+    assert not baseline.reproducible and baseline.bug_tests == []
+    assert any("'not_installed_pkg'" in p and "environment problem" in p for p in baseline.problems)
+
+
+def test_missing_repository_module_still_counts_as_the_bug(write_repo, workspaces):
+    # The repository's own module is missing (renamed by the bug): that is a real, fixable failure.
+    root = write_repo({"helpers/__init__.py": "", "mod.py": "from helpers.util import x\n",
+                       "test_mod.py": "import mod\n\n\ndef test_x():\n    assert mod.x == 1\n"}, name="own")
+    engine = VerificationEngine(FAST)
+    workspace = workspaces.create(root, execution_id="e", label="baseline")
+    analysis = make_analysis("i", affected_files=["mod.py"], evidence=[], tests_run=[
+        __import__("app.agents.schemas", fromlist=["TestRunRecord"]).TestRunRecord(
+            observation_id="o", test_path="test_mod.py", exit_code=1, timed_out=False, duration_seconds=0.1,
+            outcome="failed")])
+    selection = select_tests(workspace.repo, analysis, affected_files=["mod.py"], include_full_suite=False)
+    baseline = engine.capture_baseline(workspace, selection, time.monotonic() + 60)
+    assert baseline.reproducible and baseline.bug_tests

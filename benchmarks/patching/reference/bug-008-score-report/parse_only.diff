@@ -1,0 +1,9 @@
+--- a/parsing.py
++++ b/parsing.py
+@@ -3,4 +3,6 @@
+     scores = {}
+     for item in text.split(","):
++        if not item.strip():
++            continue
+         name, value = item.split(":")
+         scores[name.strip()] = int(value)

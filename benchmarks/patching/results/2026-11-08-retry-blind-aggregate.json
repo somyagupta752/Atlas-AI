@@ -1,0 +1,214 @@
+{
+  "description": "Test-blind repair-retry arm (--context-tests 0), claude-opus-5-5, recorded diagnoses, up to 3 attempts, 4 runs x 4 cases.",
+  "source_files": {
+    "2026-11-08-retry-blind-opus-5-5.json": "c0ea6221bb8c113a4b1dcddef2469e52b27726dcc8df7379dc11f6f54e827236",
+    "2026-11-08-retry-blind-run2-opus-5-5.json": "cb2136afaa7f318c84c54071674b5dc74015ecc33a2178125f6bdeb38560105b",
+    "2026-11-08-retry-blind-run3-opus-5-5.json": "e046331c38e54ea3a293200e2d42f84aee984e144572341f59527ec8c95e51d1",
+    "2026-11-08-retry-blind-run4-opus-5-5.json": "5ba4e4556a9a811a6dbd22b800c58d9d89193ef674ee594f3c23f5298e4474e1"
+  },
+  "case_runs": 16,
+  "first_attempt_failures": 3,
+  "first_attempt_failure_rate": 0.1875,
+  "repaired_by_retry": 3,
+  "retry_success_rate": 1.0,
+  "final_verified": 16,
+  "success": 15,
+  "verified_but_failed_holdout": [
+    {
+      "case": "bug-012-versions",
+      "run": 2
+    }
+  ],
+  "total_cost_usd": 0.480647,
+  "cost_per_successful_repair": 0.076085,
+  "cost_per_success": 0.032043,
+  "per_case": {
+    "bug-008-score-report": [
+      {
+        "run": 1,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.027611
+      },
+      {
+        "run": 2,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.016545
+      },
+      {
+        "run": 3,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.015785
+      },
+      {
+        "run": 4,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.015885
+      }
+    ],
+    "bug-011-split-bill": [
+      {
+        "run": 1,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.026946
+      },
+      {
+        "run": 2,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.018063
+      },
+      {
+        "run": 3,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.018303
+      },
+      {
+        "run": 4,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.017063
+      }
+    ],
+    "bug-012-versions": [
+      {
+        "run": 1,
+        "attempts": [
+          "rejected",
+          "verified"
+        ],
+        "repaired_by_retry": true,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.083042
+      },
+      {
+        "run": 2,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": false,
+        "success": false,
+        "cost_usd": 0.023491
+      },
+      {
+        "run": 3,
+        "attempts": [
+          "rejected",
+          "verified"
+        ],
+        "repaired_by_retry": true,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.073957
+      },
+      {
+        "run": 4,
+        "attempts": [
+          "rejected",
+          "verified"
+        ],
+        "repaired_by_retry": true,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.071257
+      }
+    ],
+    "bug-013-unique-emails": [
+      {
+        "run": 1,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.023566
+      },
+      {
+        "run": 2,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.016971
+      },
+      {
+        "run": 3,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.015551
+      },
+      {
+        "run": 4,
+        "attempts": [
+          "verified"
+        ],
+        "repaired_by_retry": false,
+        "verified": true,
+        "holdout_passed": true,
+        "success": true,
+        "cost_usd": 0.016611
+      }
+    ]
+  }
+}

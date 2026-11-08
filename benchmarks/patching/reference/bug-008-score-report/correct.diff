@@ -1,0 +1,21 @@
+--- a/parsing.py
++++ b/parsing.py
+@@ -3,4 +3,6 @@
+     scores = {}
+     for item in text.split(","):
++        if not item.strip():
++            continue
+         name, value = item.split(":")
+         scores[name.strip()] = int(value)
+--- a/report.py
++++ b/report.py
+@@ -6,7 +6,9 @@
+     scores = parse_scores(text)
+     values = list(scores.values())
++    if not values:
++        return {"count": 0, "mean": 0.0, "best": None}
+     return {
+         "count": len(values),
+         "mean": round(sum(values) / len(values), 2),
+         "best": max(scores, key=scores.get),
+     }

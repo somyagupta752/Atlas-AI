@@ -1,0 +1,8 @@
+--- a/slugs.py
++++ b/slugs.py
+@@ -4,4 +4,4 @@
+ def slugify(title: str) -> str:
+     """Lowercase ASCII words joined by '-': 'Hello, World!' -> 'hello-world'."""
+-    words = re.findall(r"[a-z0-9]+", title.lower())
++    words = re.findall(r"[a-z0-9]+", title.lower().replace("é", "e"))
+     return "-".join(words)

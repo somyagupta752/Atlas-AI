@@ -1,0 +1,10 @@
+--- a/cache.py
++++ b/cache.py
+@@ -9,3 +9,6 @@
+     def __init__(self, ttl: str = "5m", clock=time.monotonic) -> None:
+-        self.ttl_seconds = to_seconds(ttl)
++        if ttl.strip().lower().endswith("s"):
++            self.ttl_seconds = int(ttl.strip()[:-1])
++        else:
++            self.ttl_seconds = to_seconds(ttl)
+         self._clock = clock

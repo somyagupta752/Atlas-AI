@@ -6,17 +6,44 @@
       "summary": "calculate_average divides sum(numbers) by len(numbers) with no check for an empty list.",
       "root_cause": "For an empty list len(numbers) is 0, so the division raises ZeroDivisionError.",
       "confidence": 0.9,
-      "affected_files": ["solution.py", "test_solution.py"],
+      "affected_files": [
+        "solution.py",
+        "test_solution.py"
+      ],
       "suggested_fix": "Handle the empty list before dividing.",
       "evidence": [
-        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "solution.py",
-         "qualified_name": "calculate_average", "start_line": 1, "end_line": 2,
-         "observation": "return sum(numbers) / len(numbers) has no empty-input check."},
-        {"id": "E2", "source_type": "execution", "observation_ids": ["obs-2"], "file_path": "test_solution.py",
-         "observation": "test_average_of_empty_list fails with ZeroDivisionError."}
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "solution.py",
+          "qualified_name": "calculate_average",
+          "start_line": 1,
+          "end_line": 2,
+          "observation": "return sum(numbers) / len(numbers) has no empty-input check."
+        },
+        {
+          "id": "E2",
+          "source_type": "execution",
+          "observation_ids": [
+            "obs-2"
+          ],
+          "file_path": "test_solution.py",
+          "observation": "test_average_of_empty_list fails with ZeroDivisionError."
+        }
       ],
-      "tests_run": [{"observation_id": "obs-2", "test_path": "test_solution.py", "exit_code": 1,
-                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_solution.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
     }
   },
   {
@@ -26,18 +53,49 @@
       "summary": "get_user_profile reads user.id on the None that UserService.get_user returns for a missing user.",
       "root_cause": "UserRepository.find_by_id returns None for a missing user; get_user_profile dereferences it, and the broad except turns the AttributeError into a 500.",
       "confidence": 0.9,
-      "affected_files": ["users_api/routes.py", "users_api/service.py", "users_api/repository.py", "tests/test_routes.py"],
+      "affected_files": [
+        "users_api/routes.py",
+        "users_api/service.py",
+        "users_api/repository.py",
+        "tests/test_routes.py"
+      ],
       "suggested_fix": "Return a 404 response when no user is found.",
       "evidence": [
-        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "users_api/routes.py",
-         "qualified_name": "get_user_profile", "start_line": 4, "end_line": 10,
-         "observation": "user.id is read without a None check inside a broad try/except."},
-        {"id": "E2", "source_type": "source_code", "observation_ids": ["obs-2"], "file_path": "users_api/repository.py",
-         "qualified_name": "UserRepository.find_by_id", "start_line": 14, "end_line": 16,
-         "observation": "find_by_id returns None when no record exists."}
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "users_api/routes.py",
+          "qualified_name": "get_user_profile",
+          "start_line": 4,
+          "end_line": 10,
+          "observation": "user.id is read without a None check inside a broad try/except."
+        },
+        {
+          "id": "E2",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-2"
+          ],
+          "file_path": "users_api/repository.py",
+          "qualified_name": "UserRepository.find_by_id",
+          "start_line": 14,
+          "end_line": 16,
+          "observation": "find_by_id returns None when no record exists."
+        }
       ],
-      "tests_run": [{"observation_id": "obs-3", "test_path": "tests/test_routes.py", "exit_code": 1,
-                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+      "tests_run": [
+        {
+          "observation_id": "obs-3",
+          "test_path": "tests/test_routes.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
     }
   },
   {
@@ -47,15 +105,35 @@
       "summary": "total_pages uses floor division, so a partial last page is not counted.",
       "root_cause": "total_pages returns item_count // per_page, which rounds down; paginate then treats the partial last page as beyond the end.",
       "confidence": 0.9,
-      "affected_files": ["pagination.py", "test_pagination.py"],
+      "affected_files": [
+        "pagination.py",
+        "test_pagination.py"
+      ],
       "suggested_fix": "Round the page count up.",
       "evidence": [
-        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "pagination.py",
-         "qualified_name": "total_pages", "start_line": 1, "end_line": 2,
-         "observation": "return item_count // per_page rounds down."}
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "pagination.py",
+          "qualified_name": "total_pages",
+          "start_line": 1,
+          "end_line": 2,
+          "observation": "return item_count // per_page rounds down."
+        }
       ],
-      "tests_run": [{"observation_id": "obs-2", "test_path": "test_pagination.py", "exit_code": 1,
-                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_pagination.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
     }
   },
   {
@@ -65,15 +143,35 @@
       "summary": "apply_discount computes the discounted price but returns the original price.",
       "root_cause": "apply_discount assigns the discounted value to a local variable and then returns round(price, 2) instead.",
       "confidence": 0.95,
-      "affected_files": ["pricing.py", "test_pricing.py"],
+      "affected_files": [
+        "pricing.py",
+        "test_pricing.py"
+      ],
       "suggested_fix": "Return the discounted value.",
       "evidence": [
-        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "pricing.py",
-         "qualified_name": "apply_discount", "start_line": 5, "end_line": 6,
-         "observation": "discounted is computed and never used; the original price is returned."}
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "pricing.py",
+          "qualified_name": "apply_discount",
+          "start_line": 5,
+          "end_line": 6,
+          "observation": "discounted is computed and never used; the original price is returned."
+        }
       ],
-      "tests_run": [{"observation_id": "obs-2", "test_path": "test_pricing.py", "exit_code": 1,
-                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_pricing.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
     }
   },
   {
@@ -83,15 +181,377 @@
       "summary": "load_port catches every exception and returns the default port.",
       "root_cause": "A broad except Exception swallows the ValueError from int() and the ConfigError for out-of-range ports; only a missing PORT (KeyError) should fall back to the default.",
       "confidence": 0.9,
-      "affected_files": ["config_loader.py", "test_config_loader.py"],
+      "affected_files": [
+        "config_loader.py",
+        "test_config_loader.py"
+      ],
       "suggested_fix": "Catch only KeyError for the default and raise ConfigError for invalid values.",
       "evidence": [
-        {"id": "E1", "source_type": "source_code", "observation_ids": ["obs-1"], "file_path": "config_loader.py",
-         "qualified_name": "load_port", "start_line": 10, "end_line": 16,
-         "observation": "except Exception: return DEFAULT_PORT hides every error."}
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "config_loader.py",
+          "qualified_name": "load_port",
+          "start_line": 10,
+          "end_line": 16,
+          "observation": "except Exception: return DEFAULT_PORT hides every error."
+        }
       ],
-      "tests_run": [{"observation_id": "obs-2", "test_path": "test_config_loader.py", "exit_code": 1,
-                     "timed_out": false, "duration_seconds": 0.2, "outcome": "failed"}]
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_config_loader.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-006-region-pricing",
+    "bug_report": "Orders from California are charged differently depending on whether the region is typed 'CA' or 'ca': 'CA' gets no sales tax and 'ca' gets the $10 default shipping instead of $5.",
+    "diagnosis": {
+      "summary": "tax_rate and shipping_cost look regions up with the code exactly as given, but their tables use different cases.",
+      "root_cause": "TAX_RATES has lower-case keys and SHIPPING upper-case keys, and both lookups are case-sensitive, so each lookup misses for one spelling of the region.",
+      "confidence": 0.9,
+      "affected_files": [
+        "tax.py",
+        "shipping.py",
+        "checkout.py",
+        "test_checkout.py"
+      ],
+      "suggested_fix": "Make both lookups case-insensitive.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "tax.py",
+          "qualified_name": "tax_rate",
+          "start_line": 6,
+          "end_line": 7,
+          "observation": "TAX_RATES.get(region) with lower-case keys."
+        },
+        {
+          "id": "E2",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "shipping.py",
+          "qualified_name": "shipping_cost",
+          "start_line": 7,
+          "end_line": 8,
+          "observation": "SHIPPING.get(region) with upper-case keys."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_checkout.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-007-durations",
+    "bug_report": "A cache TTL of '90s' keeps entries for 90 minutes instead of 90 seconds.",
+    "diagnosis": {
+      "summary": "The shared duration parser maps the 's' unit to 60 seconds.",
+      "root_cause": "UNITS in durations.py maps 's' to 60 instead of 1, so every seconds value, in the cache and in request timeouts, is read as minutes.",
+      "confidence": 0.9,
+      "affected_files": [
+        "durations.py",
+        "cache.py",
+        "timeouts.py",
+        "test_cache.py",
+        "test_timeouts.py"
+      ],
+      "suggested_fix": "Map 's' to 1 in the unit table.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "durations.py",
+          "qualified_name": "to_seconds",
+          "start_line": 3,
+          "end_line": 3,
+          "observation": "UNITS['s'] is 60."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_cache.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        },
+        {
+          "observation_id": "obs-3",
+          "test_path": "test_timeouts.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-008-score-report",
+    "bug_report": "Summarising an empty score list crashes with 'not enough values to unpack'. An empty input should give count 0, mean 0.0 and no best player.",
+    "diagnosis": {
+      "summary": "parse_scores splits blank input into one empty item, and summarize does not handle zero scores.",
+      "root_cause": "parse_scores treats the empty string from ''.split(',') as an item and fails to unpack it; summarize then divides by zero and calls max() on an empty dict when there are no scores.",
+      "confidence": 0.8,
+      "affected_files": [
+        "parsing.py",
+        "report.py",
+        "test_report.py"
+      ],
+      "suggested_fix": "Skip blank items while parsing and return the empty summary when there are no scores.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "parsing.py",
+          "qualified_name": "parse_scores",
+          "start_line": 3,
+          "end_line": 6,
+          "observation": "Each split item is unpacked without a blank check."
+        },
+        {
+          "id": "E2",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "report.py",
+          "qualified_name": "summarize",
+          "start_line": 6,
+          "end_line": 12,
+          "observation": "Divides by len(values) and calls max() with no empty check."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_report.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-009-leap-year",
+    "bug_report": "February 2000 shows 28 days, but 2000 was a leap year.",
+    "diagnosis": {
+      "summary": "is_leap_year implements the 4-year and century rules but not the 400-year rule.",
+      "root_cause": "is_leap_year returns year % 4 == 0 and year % 100 != 0, so years divisible by 400, such as 2000, are wrongly not leap years.",
+      "confidence": 0.95,
+      "affected_files": [
+        "calendar_utils.py",
+        "test_calendar_utils.py"
+      ],
+      "suggested_fix": "Add the 400-year exception.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "calendar_utils.py",
+          "qualified_name": "is_leap_year",
+          "start_line": 1,
+          "end_line": 3,
+          "observation": "Missing the year % 400 == 0 case."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_calendar_utils.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-010-slugify",
+    "bug_report": "Slugs drop accented letters: 'Café au lait' becomes 'caf-au-lait' instead of 'cafe-au-lait'.",
+    "diagnosis": {
+      "summary": "slugify keeps only [a-z0-9] after lower-casing, so non-ASCII letters are discarded.",
+      "root_cause": "slugify matches [a-z0-9]+ on the raw lower-cased title, which drops accented letters instead of transliterating them to ASCII.",
+      "confidence": 0.9,
+      "affected_files": [
+        "slugs.py",
+        "test_slugs.py"
+      ],
+      "suggested_fix": "Transliterate to ASCII before matching words.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "slugs.py",
+          "qualified_name": "slugify",
+          "start_line": 4,
+          "end_line": 7,
+          "observation": "re.findall('[a-z0-9]+', title.lower()) drops é."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_slugs.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-011-split-bill",
+    "bug_report": "Splitting a $100.00 bill between 3 people charges $33.33 each, so the shares add up to $99.99 and a cent goes missing.",
+    "diagnosis": {
+      "summary": "split_bill rounds one share and repeats it, so leftover cents are lost.",
+      "root_cause": "split_bill computes round(total_cents / people) once and returns that share for everyone, so whenever the total does not divide evenly the shares do not add up to the total.",
+      "confidence": 0.9,
+      "affected_files": [
+        "billing.py",
+        "test_billing.py"
+      ],
+      "suggested_fix": "Distribute the leftover cents so the shares add up to the total.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "billing.py",
+          "qualified_name": "split_bill",
+          "start_line": 1,
+          "end_line": 4,
+          "observation": "One rounded share is repeated for every person."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_billing.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-012-versions",
+    "bug_report": "The updater says version 1.10.0 is not newer than 1.9.0, so users on 1.9.0 are never offered the update.",
+    "diagnosis": {
+      "summary": "is_newer compares version strings lexicographically.",
+      "root_cause": "is_newer returns candidate > current on the raw strings, so '1.10.0' sorts before '1.9.0' because '1' < '9' character by character.",
+      "confidence": 0.9,
+      "affected_files": [
+        "versions.py",
+        "test_versions.py"
+      ],
+      "suggested_fix": "Compare versions numerically.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "versions.py",
+          "qualified_name": "is_newer",
+          "start_line": 1,
+          "end_line": 3,
+          "observation": "String comparison of version numbers."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_versions.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
+    }
+  },
+  {
+    "investigation_case": "bug-013-unique-emails",
+    "bug_report": "The contact list shows Ada@x.com and ada@X.com as two different people. Addresses that differ only in case should appear once.",
+    "diagnosis": {
+      "summary": "unique_emails de-duplicates exact strings only.",
+      "root_cause": "unique_emails uses dict.fromkeys(emails), which compares addresses case-sensitively, so case variants of the same address are kept as separate entries.",
+      "confidence": 0.9,
+      "affected_files": [
+        "contacts.py",
+        "test_contacts.py"
+      ],
+      "suggested_fix": "Compare addresses case-insensitively.",
+      "evidence": [
+        {
+          "id": "E1",
+          "source_type": "source_code",
+          "observation_ids": [
+            "obs-1"
+          ],
+          "file_path": "contacts.py",
+          "qualified_name": "unique_emails",
+          "start_line": 1,
+          "end_line": 3,
+          "observation": "dict.fromkeys on the raw addresses."
+        }
+      ],
+      "tests_run": [
+        {
+          "observation_id": "obs-2",
+          "test_path": "test_contacts.py",
+          "exit_code": 1,
+          "timed_out": false,
+          "duration_seconds": 0.2,
+          "outcome": "failed"
+        }
+      ]
     }
   }
 ]

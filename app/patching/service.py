@@ -36,6 +36,7 @@ from app.agents.agent import (
 from app.agents.repository import InvestigationNotFoundError, InvestigationRepository
 from app.agents.schemas import RootCauseAnalysis
 from app.patching.applier import ApplierError, apply_patch
+from app.patching.budget import LLMBudget, LLMPricingUnknownError, model_prices
 from app.patching.generator import (
     PROMPT_VERSION,
     AttemptFeedback,
@@ -43,6 +44,7 @@ from app.patching.generator import (
     PatchGenerator,
     RepositoryContext,
 )
+from app.patching.graph_tests import GraphDiscovery, discover_tests
 from app.patching.models import (
     ExecutionStatus,
     PatchApplyResult,
@@ -69,11 +71,16 @@ from app.tools.base import truncate_text
 logger = logging.getLogger(__name__)
 
 MIN_ATTEMPT_SECONDS = 5.0
-MAX_CONTEXT_TEST_FILES = 5
 
 
 class PatchRequestError(ValueError):
     """The request itself is invalid (for example, too many attempts)."""
+
+
+class TestBackendUnavailableError(RuntimeError):
+    """The configured test runner (for example the container image) cannot run."""
+
+    __test__ = False
 
 
 class InvestigationNotEligibleError(Exception):
@@ -153,8 +160,17 @@ class PatchingService:
         engine: VerificationEngine | None = None,
         trusted_test_roots: list[Path] | None = None,
         clock: Callable[[], float] = time.monotonic,
+        llm_budget: LLMBudget | None = None,
+        graph: Any = None,
+        allow_untrusted_repositories: bool = False,
     ) -> None:
         self._llm = llm
+        # Optional shared parent: every execution's budget must also fit in it (e.g. one benchmark run).
+        self._shared_budget = llm_budget
+        # Task 10 graph store (Neo4j), optional. Only ever suggests tests; see graph_tests.py.
+        self._graph = graph
+        # Honoured only when the test backend is an isolation boundary (the container runner).
+        self._allow_untrusted = allow_untrusted_repositories
         self._investigations = investigations
         self._resolver = resolver
         self._workspaces = workspaces
@@ -168,6 +184,7 @@ class PatchingService:
             timeout_seconds=self._limits.llm_timeout_seconds,
             max_source_bytes=self._limits.max_context_source_bytes,
             max_feedback_bytes=self._limits.max_feedback_bytes,
+            max_output_tokens=self._limits.llm_max_output_tokens,
         )
 
     # --- entry point -----------------------------------------------------------------
@@ -189,11 +206,20 @@ class PatchingService:
         attempts_allowed = self._limits.max_attempts if max_attempts is None else max_attempts
         if not 1 <= attempts_allowed <= self._limits.max_attempts:
             raise PatchRequestError(f"max_attempts must be between 1 and {self._limits.max_attempts}")
+        if self._limits.max_llm_cost_usd is not None and model_prices(self._llm) is None:
+            raise LLMPricingUnknownError(
+                f"A cost cap is set, but the price of model {getattr(self._llm, 'model', None)!r} is unknown"
+            )
         root = self._resolver.resolve(investigation.repository_id)
-        if not within_roots(root, self._trusted):
+        runner = self._engine.runner
+        isolated = bool(getattr(runner, "isolated", False))
+        if not within_roots(root, self._trusted) and not (isolated and self._allow_untrusted):
             raise RepositoryAccessDeniedError(
                 "Patch verification runs the repository's tests, and this repository is not a trusted test root"
             )
+        if not runner.available():
+            # Never fall back to running the tests some other, less isolated way.
+            raise TestBackendUnavailableError("The configured test execution backend is not available")
         candidates = [*analysis.affected_files] + [
             e.file_path for e in analysis.evidence if e.file_path and e.source_type == "source_code"
         ]
@@ -209,9 +235,11 @@ class PatchingService:
             status="inconclusive",
             summary="",
         )
+        llm_budget = LLMBudget.from_limits(self._limits, parent=self._shared_budget)
         started = self._clock()
         try:
-            self._run(execution, investigation, analysis, root, allowed, attempts_allowed, run_full_test_suite)
+            self._run(execution, investigation, analysis, root, allowed, attempts_allowed, run_full_test_suite,
+                      llm_budget)
         except PatchPersistenceError:
             logger.exception("Patch execution %s could not be persisted", execution.execution_id)
             self._finish(execution, "failed", "Patch data could not be saved.", "persistence_error")
@@ -219,6 +247,7 @@ class PatchingService:
             logger.exception("Patch execution %s failed", execution.execution_id)
             self._finish(execution, "failed", "Patch generation failed because of an internal error.", "internal_error")
         execution.duration_seconds = round(self._clock() - started, 3)
+        execution.llm_budget = llm_budget.report()
         try:
             execution.original_repository_modified = (
                 execution.source_snapshot is not None
@@ -232,7 +261,7 @@ class PatchingService:
 
     # --- workflow --------------------------------------------------------------------
 
-    def _run(self, execution, investigation, analysis, root, allowed, max_attempts, full_suite) -> None:
+    def _run(self, execution, investigation, analysis, root, allowed, max_attempts, full_suite, llm_budget) -> None:
         budget = _Budget(self._limits.max_total_seconds, self._clock)
         try:
             baseline_ws = self._workspaces.create(root, execution_id=execution.execution_id, label="baseline")
@@ -243,10 +272,13 @@ class PatchingService:
         try:
             execution.source_snapshot = baseline_ws.snapshot
             symbols = [e.qualified_name for e in analysis.evidence if e.qualified_name]
+            suggestions, graph_report = self._graph_suggestions(baseline_ws, investigation, allowed, symbols)
             selection = select_tests(
                 baseline_ws.repo, analysis, affected_files=allowed, affected_symbols=symbols,
                 max_test_files=self._limits.max_selected_test_files, include_full_suite=full_suite,
+                suggested=suggestions,
             )
+            selection.graph = graph_report.model_dump(mode="json")
             execution.test_selection = selection
             if not selection.items:
                 self._finish(execution, "inconclusive", "No relevant tests were found, so a fix cannot be verified.",
@@ -277,6 +309,7 @@ class PatchingService:
             history: list[AttemptFeedback] = []
             hashes: dict[str, int] = {}
             stop_reason = "max_attempts"
+            budget_limit = None
             for number in range(1, max_attempts + 1):
                 if budget.remaining() < MIN_ATTEMPT_SECONDS:
                     stop_reason = "verification_budget_exhausted"
@@ -284,10 +317,14 @@ class PatchingService:
                 try:
                     attempt = self._attempt(
                         number, execution, analysis, context, history, scope, root, baseline_ws, baseline,
-                        selection, budget, hashes, unchanged,
+                        selection, budget, hashes, unchanged, llm_budget,
                     )
                 except PatchGenerationError as exc:
                     execution.usage = execution.usage + exc.usage
+                    if exc.kind == "budget_exhausted":
+                        # Not a model failure: Atlas declined to make the next call.
+                        stop_reason, budget_limit = "llm_budget_exhausted", exc.budget_limit
+                        break
                     self._finish(execution, "failed", str(exc), f"llm_{exc.kind}", stop_reason="generation_failed")
                     return
                 execution.attempts.append(attempt)
@@ -300,6 +337,11 @@ class PatchingService:
                 history.append(_feedback(attempt, self._limits.max_feedback_bytes))
 
             final = execution.final_attempt
+            if final is None and stop_reason == "llm_budget_exhausted":
+                self._finish(execution, "inconclusive",
+                             f"The LLM budget ({budget_limit}) did not allow a single model call, so no patch was "
+                             "generated.", "llm_budget_exhausted", stop_reason=stop_reason)
+                return
             if final is None:
                 self._finish(execution, "inconclusive", "The verification time budget ran out before any attempt.",
                              "verification_budget_exhausted", stop_reason=stop_reason)
@@ -311,6 +353,8 @@ class PatchingService:
             prefix = f"Attempt {final.attempt_number} of {count} attempt(s): "
             if stop_reason == "max_attempts" and not success:
                 prefix = f"Stopped after the maximum of {count} attempt(s). Final attempt: "
+            elif stop_reason == "llm_budget_exhausted":
+                prefix = f"Stopped: the LLM budget ({budget_limit}) was exhausted. Final attempt: "
             elif stop_reason == "verification_budget_exhausted":
                 prefix = "Stopped: the verification time budget ran out. Final attempt: "
             self._finish(execution, status, prefix + final.summary, final.failure_reason, stop_reason=stop_reason)
@@ -318,13 +362,18 @@ class PatchingService:
             self._workspaces.release(baseline_ws, success=success)
 
     def _attempt(self, number, execution, analysis, context, history, scope, root, baseline_ws, baseline,
-                 selection, budget, hashes, unchanged) -> PatchAttempt:
+                 selection, budget, hashes, unchanged, llm_budget) -> PatchAttempt:
         generated = self._generator.generate_patch(
             analysis, context, execution_id=execution.execution_id, attempt_number=number, history=history,
+            budget=llm_budget,
         )
         proposal = generated.proposal
-        attempt = PatchAttempt(attempt_number=number, status="generated", proposal=proposal)
-        self._save(lambda p: p.create_proposal(proposal, self._provenance(generated, baseline_ws)))
+        attempt = PatchAttempt(attempt_number=number, status="generated", proposal=proposal,
+                               feedback_from=[h.attempt_number for h in history],
+                               feedback_reasons=[r for h in history for r in h.reasons][:20])
+        provenance = {**self._provenance(generated, baseline_ws), "llm_budget": llm_budget.report(),
+                      "feedback_from": attempt.feedback_from, "feedback_reasons": attempt.feedback_reasons}
+        self._save(lambda p: p.create_proposal(proposal, provenance))
         try:
             return self._validate_apply_verify(attempt, scope, root, baseline_ws, baseline, selection, budget,
                                                hashes, unchanged)
@@ -413,16 +462,33 @@ class PatchingService:
             raise InvestigationNotEligibleError("The stored diagnosis does not match its investigation")
         return analysis
 
+    def _graph_suggestions(self, baseline_ws: Workspace, investigation, allowed, symbols):
+        """Graph test suggestions from the baseline copy. Any failure is a warning, never a blocker."""
+        if not self._limits.graph_test_discovery:
+            return [], GraphDiscovery(source="disabled")
+        try:
+            return discover_tests(
+                baseline_ws.repo, investigation.repository_id, allowed, symbols, graph=self._graph,
+                max_depth=self._limits.graph_max_depth, max_suggestions=self._limits.max_graph_test_files,
+                allow_in_memory=self._limits.graph_in_memory_fallback,
+            )
+        except Exception as exc:  # noqa: BLE001 - discovery is optional
+            logger.warning("Graph test discovery failed: %s", type(exc).__name__)
+            return [], GraphDiscovery(source="unavailable",
+                                      warnings=[f"Graph test discovery failed ({type(exc).__name__})"])
+
     def _context(self, investigation, analysis, baseline_ws: Workspace, allowed, selection, baseline: Baseline):
         def read(path: str) -> str:
             return (baseline_ws.repo / path).read_text(encoding="utf-8", errors="replace")
 
-        tests = {item.target: read(item.target) for item in selection.items[:MAX_CONTEXT_TEST_FILES]}
+        shown = selection.items[: self._limits.max_context_test_files]
+        tests = {item.target: read(item.target) for item in shown}
         return RepositoryContext(
             repository_id=investigation.repository_id,
             bug_report=investigation.bug_report,
             modifiable_files={path: read(path) for path in allowed},
             test_files=tests,
+            withheld_test_files=len(selection.items) - len(shown),
             failing_tests=baseline.bug_test_details(),
         )
 
@@ -442,6 +508,7 @@ class PatchingService:
             "source_revision": baseline_ws.snapshot.revision,
             "claimed_files": generated.draft.affected_files,
             "limits": self._limits.model_dump(),
+            "context_test_files": self._limits.max_context_test_files,
         }
 
     def _save(self, action: Callable[[PatchRepository], Any]) -> None:

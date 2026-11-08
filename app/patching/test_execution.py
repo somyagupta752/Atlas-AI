@@ -23,7 +23,7 @@ import sys
 import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -35,6 +35,7 @@ from app.tools.base import redact_secrets
 ENV_ALLOWLIST = ("PATH", "LANG", "LC_ALL", "SYSTEMROOT")
 MAX_JUNIT_BYTES = 20 * 1024**2
 TEST_TARGET = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./-]*\.py$")
+MISSING_MODULE = re.compile(r"ModuleNotFoundError: No module named '([A-Za-z0-9_.]+)'")
 SEVERITY = {TestOutcome.PASSED: 0, TestOutcome.SKIPPED: 1, TestOutcome.FAILED: 2, TestOutcome.ERROR: 3}
 
 
@@ -107,8 +108,12 @@ def parse_junit(path: Path, workspace: Workspace) -> dict[str, TestCaseResult]:
         identifier = test_id(case.get("classname", ""), name, case.get("file"))
         outcome = TestOutcome.PASSED
         message = None
+        missing = None
         for child in case:
             tag = child.tag
+            if tag in ("failure", "error"):
+                found = MISSING_MODULE.search(f"{child.get('message') or ''}\n{(child.text or '')[:20_000]}")
+                missing = found.group(1) if found else missing
             if tag == "failure":
                 outcome, message = TestOutcome.FAILED, child.get("message")
             elif tag == "error":
@@ -121,7 +126,8 @@ def parse_junit(path: Path, workspace: Workspace) -> dict[str, TestCaseResult]:
             duration = float(case.get("time", "0") or 0)
         except ValueError:
             duration = 0.0
-        new = TestCaseResult(test_id=identifier, outcome=outcome, message=message, duration_seconds=round(duration, 4))
+        new = TestCaseResult(test_id=identifier, outcome=outcome, message=message, duration_seconds=round(duration, 4),
+                             missing_module=missing)
         existing = results.get(identifier)
         # Setup/teardown errors can add a second entry for the same test: keep the worse outcome.
         if existing is None or SEVERITY[new.outcome] > SEVERITY[existing.outcome]:
@@ -129,7 +135,30 @@ def parse_junit(path: Path, workspace: Workspace) -> dict[str, TestCaseResult]:
     return results
 
 
+class TestRunner(Protocol):
+    """The stable boundary between verification and test execution.
+
+    The patch pipeline only calls these three members, so a local process runner
+    and a container runner are interchangeable. ``isolated`` is True only for a
+    backend that is an isolation boundary (no network, no host filesystem).
+    """
+
+    isolated: bool
+
+    def run(self, workspace: Workspace, targets: list[str], *, label: str, kind: str,
+            timeout: float) -> TestSuiteRun: ...
+
+    def available(self) -> bool: ...
+
+    def identity(self) -> dict[str, Any]: ...
+
+
 class PytestRunner:
+    """Local process backend: pytest as a child process of Atlas. Not a sandbox."""
+
+    __test__ = False
+    isolated = False
+
     def __init__(self, limits: PatchLimits | None = None, *, python: str | None = None) -> None:
         self.limits = limits or PatchLimits()
         self.python = python or sys.executable
@@ -142,6 +171,18 @@ class PytestRunner:
             memory_bytes=self.limits.process_memory_bytes,
             file_bytes=self.limits.process_file_bytes,
         )
+
+    def available(self) -> bool:
+        return True
+
+    def identity(self) -> dict[str, Any]:
+        return {"backend": "local", "isolated": False, "resource_limits": self.resource_limits.as_rlimits()}
+
+    @staticmethod
+    def validate_targets(targets: list[str]) -> None:
+        for target in targets:
+            if not TEST_TARGET.match(target) or ".." in target.split("/"):
+                raise ValueError(f"Refusing to run an unvalidated test target: {target!r}")
 
     @staticmethod
     def command_identity(targets: list[str]) -> list[str]:
@@ -157,9 +198,7 @@ class PytestRunner:
         kind: str,
         timeout: float,
     ) -> TestSuiteRun:
-        for target in targets:
-            if not TEST_TARGET.match(target) or ".." in target.split("/"):
-                raise ValueError(f"Refusing to run an unvalidated test target: {target!r}")
+        self.validate_targets(targets)
         self._counter += 1
         junit = workspace.meta / f"junit-{label}-{self._counter}.xml"
         command = [self.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--no-header", "-o",
@@ -217,9 +256,14 @@ class RuffReport(BaseModel):
 
 
 class RuffRunner:
-    def __init__(self, limits: PatchLimits | None = None, *, python: str | None = None) -> None:
+    """Ruff only parses code; it never executes it. ``isolated`` ignores the repository's
+    ruff configuration (for untrusted repositories, whose config is untrusted input)."""
+
+    def __init__(self, limits: PatchLimits | None = None, *, python: str | None = None,
+                 isolated: bool = False) -> None:
         self.limits = limits or PatchLimits()
         self.python = python or sys.executable
+        self.isolated = isolated
 
     @staticmethod
     def available() -> bool:
@@ -232,7 +276,8 @@ class RuffRunner:
         if not files:
             return RuffReport(available=True)
         process = run_process(
-            [self.python, "-m", "ruff", "check", "--no-cache", "--output-format=json", "--exit-zero", "--", *files],
+            [self.python, "-m", "ruff", "check", "--no-cache", "--output-format=json", "--exit-zero",
+             *(["--isolated"] if self.isolated else []), "--", *files],
             timeout=timeout,
             cwd=workspace.repo,
             env=child_environment(workspace),

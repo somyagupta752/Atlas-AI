@@ -1,0 +1,12 @@
+--- a/tax.py
++++ b/tax.py
+@@ -6,2 +6,2 @@
+ def tax_rate(region: str) -> float:
+-    return TAX_RATES.get(region, 0.0)
++    return TAX_RATES.get(region.lower(), 0.0)
+--- a/shipping.py
++++ b/shipping.py
+@@ -7,2 +7,2 @@
+ def shipping_cost(region: str) -> float:
+-    return SHIPPING.get(region, DEFAULT_SHIPPING)
++    return SHIPPING.get(region.upper(), DEFAULT_SHIPPING)

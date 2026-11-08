@@ -180,6 +180,11 @@ class FakeLLM:
     model: str = "fake-model"
     repeat_last: bool = False
     calls: list[dict[str, Any]] = field(default_factory=list)
+    # A fake costs nothing. Set to None to price ``model`` from the real pricing table.
+    pricing: dict[str, float] | None = field(
+        default_factory=lambda: {"input": 0.0, "output": 0.0, "cache_read": 0.0, "cache_write": 0.0}
+    )
+    max_tokens: int = 1024
 
     def generate(
         self,
@@ -414,6 +419,11 @@ class AnthropicProvider:
             except anthropic.AnthropicError as exc:
                 raise LLMConfigurationError(f"Anthropic client could not be created: {type(exc).__name__}") from None
         self._client = client
+
+    @property
+    def max_tokens(self) -> int:
+        """The output token limit of every request: a budget's worst case."""
+        return self._max_tokens
 
     def generate(
         self,

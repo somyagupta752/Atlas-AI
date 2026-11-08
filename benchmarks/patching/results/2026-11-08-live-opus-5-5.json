@@ -1,0 +1,3466 @@
+{
+  "summary": {
+    "cases": 5,
+    "patch_generation_rate": 1.0,
+    "patch_validation_rate": 1.0,
+    "patch_application_rate": 1.0,
+    "bug_fix_rate": 1.0,
+    "regression_free_rate": 1.0,
+    "verified_patch_rate": 1.0,
+    "success_rate": 1.0,
+    "mean_attempts": 1.0,
+    "mean_cost_usd": 0.024372,
+    "total_cost_usd": 0.12186,
+    "mean_latency_seconds": 6.679,
+    "expectation_match_rate": null
+  },
+  "scores": [
+    {
+      "case_id": "bug-001-average",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "files_modified": [
+        "solution.py"
+      ],
+      "lines_added": 2,
+      "lines_removed": 0,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 7.987,
+      "input_tokens": 1964,
+      "output_tokens": 760,
+      "cost_usd": 0.025016,
+      "failure_reason": null
+    },
+    {
+      "case_id": "bug-002-missing-record",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "files_modified": [
+        "users_api/routes.py"
+      ],
+      "lines_added": 2,
+      "lines_removed": 0,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 6.858,
+      "input_tokens": 2521,
+      "output_tokens": 709,
+      "cost_usd": 0.026781,
+      "failure_reason": null
+    },
+    {
+      "case_id": "bug-003-pagination",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "files_modified": [
+        "pagination.py"
+      ],
+      "lines_added": 1,
+      "lines_removed": 1,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 5.149,
+      "input_tokens": 2121,
+      "output_tokens": 503,
+      "cost_usd": 0.020661,
+      "failure_reason": null
+    },
+    {
+      "case_id": "bug-004-discount",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "files_modified": [
+        "pricing.py"
+      ],
+      "lines_added": 1,
+      "lines_removed": 1,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 5.258,
+      "input_tokens": 2185,
+      "output_tokens": 497,
+      "cost_usd": 0.020861,
+      "failure_reason": null
+    },
+    {
+      "case_id": "bug-005-config",
+      "variant": "live",
+      "status": "verified",
+      "expected_status": null,
+      "matches_expectation": null,
+      "generated": true,
+      "validated": true,
+      "applied": true,
+      "bug_fixed": true,
+      "regression_free": true,
+      "verified": true,
+      "success": true,
+      "only_expected_files": true,
+      "attempts": 1,
+      "files_modified": [
+        "config_loader.py"
+      ],
+      "lines_added": 7,
+      "lines_removed": 5,
+      "verification_failures": [],
+      "rejected_reasons": [],
+      "duration_seconds": 8.142,
+      "input_tokens": 2273,
+      "output_tokens": 859,
+      "cost_usd": 0.028541,
+      "failure_reason": null
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "7ad2eec7-4f72-4eef-8ac7-aaf03f4e46e0",
+      "investigation_id": "04d33eec-2cdb-5e60-bb04-3badafc3adb5",
+      "repository_id": "bench-bug-001-average",
+      "status": "verified",
+      "final_patch_id": "7f6e9714-e9e1-419d-8349-8b6c15e56a93",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "7f6e9714-e9e1-419d-8349-8b6c15e56a93",
+            "investigation_id": "04d33eec-2cdb-5e60-bb04-3badafc3adb5",
+            "repository_id": "bench-bug-001-average",
+            "execution_id": "7ad2eec7-4f72-4eef-8ac7-aaf03f4e46e0",
+            "attempt_number": 1,
+            "description": "Adds an empty-input check to calculate_average so that it returns 0.0 for an empty list instead of raising ZeroDivisionError.",
+            "unified_diff": "--- a/solution.py\n+++ b/solution.py\n@@ -1,2 +1,4 @@\n def calculate_average(numbers):\n+    if len(numbers) == 0:\n+        return 0.0\n     return sum(numbers) / len(numbers)\n",
+            "affected_files": [
+              "solution.py"
+            ],
+            "rationale": "The root cause is dividing by len(numbers) when it is 0. Returning 0.0 before the division removes the ZeroDivisionError and gives the result the bug report and test_average_of_empty_list expect. Non-empty inputs still go through the original sum/len expression unchanged.",
+            "assumptions": [
+              "The bug report and test_average_of_empty_list define the expected result for an empty input as 0.0.",
+              "Inputs are sized sequences, since the original code already calls len(numbers). I used len(numbers) == 0 instead of `not numbers` so that sequence-like inputs such as numpy arrays don't fail on truthiness checks."
+            ],
+            "risks": [
+              "Callers that relied on ZeroDivisionError to detect empty input will now get 0.0 silently.",
+              "The diff assumes solution.py ends with a newline; if it doesn't, the last context line may need a '\\ No newline at end of file' marker to apply."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-07T22:39:45.802635Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 760,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 1960
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "solution.py"
+            ],
+            "added_lines": 2,
+            "removed_lines": 0,
+            "diff_sha256": "af929096cee4bf0c3818bec267d8183b680fab2b976c15c45c413a9c831ebebc"
+          },
+          "workspace": {
+            "workspace_id": "7ad2eec7-patched-1-cu_p1fhn",
+            "label": "patched-1",
+            "snapshot_hash": "740c88096f424a9face41f1aad2c8f452cfe7de3fbce0862a9987bc70186ae9f",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "solution.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.017
+          },
+          "verification": {
+            "verification_id": "cff7b481-9ad2-4a73-972b-2dd2c806ddf4",
+            "patch_id": "7f6e9714-e9e1-419d-8349-8b6c15e56a93",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.017,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "solution.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.13,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_solution.py::test_average_of_empty_list",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.13,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.04,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.128,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_solution.py"
+                  ],
+                  "targets": [
+                    "test_solution.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_average_of_empty_list __________________________\n\n    def test_average_of_empty_list():\n>       assert calculate_average([]) == 0.0\n               ^^^^^^^^^^^^^^^^^^^^^\n\ntest_solution.py:17: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nnumbers = []\n\n    def calculate_average(numbers):\n>       return sum(numbers) / len(numbers)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       ZeroDivisionError: division by zero\n\nsolution.py:2: ZeroDivisionError\n=========================== short test summary info ============================\nFAILED test_solution.py::test_average_of_empty_list - ZeroDivisionError: divi...\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.183,
+                  "started_at": "2026-11-07T22:39:38.434497Z",
+                  "tests": {
+                    "test_solution.py::test_average_of_multiple_numbers": {
+                      "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_of_single_number": {
+                      "test_id": "test_solution.py::test_average_of_single_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_with_negative_numbers": {
+                      "test_id": "test_solution.py::test_average_with_negative_numbers",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_of_empty_list": {
+                      "test_id": "test_solution.py::test_average_of_empty_list",
+                      "outcome": "failed",
+                      "message": "ZeroDivisionError: division by zero",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_solution.py"
+                  ],
+                  "targets": [
+                    "test_solution.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_average_of_empty_list __________________________\n\n    def test_average_of_empty_list():\n>       assert calculate_average([]) == 0.0\n               ^^^^^^^^^^^^^^^^^^^^^\n\ntest_solution.py:17: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nnumbers = []\n\n    def calculate_average(numbers):\n>       return sum(numbers) / len(numbers)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       ZeroDivisionError: division by zero\n\nsolution.py:2: ZeroDivisionError\n=========================== short test summary info ============================\nFAILED test_solution.py::test_average_of_empty_list - ZeroDivisionError: divi...\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.131,
+                  "started_at": "2026-11-07T22:39:38.566824Z",
+                  "tests": {
+                    "test_solution.py::test_average_of_multiple_numbers": {
+                      "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_of_single_number": {
+                      "test_id": "test_solution.py::test_average_of_single_number",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_with_negative_numbers": {
+                      "test_id": "test_solution.py::test_average_with_negative_numbers",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_solution.py::test_average_of_empty_list": {
+                      "test_id": "test_solution.py::test_average_of_empty_list",
+                      "outcome": "failed",
+                      "message": "ZeroDivisionError: division by zero",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "...F                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_average_of_empty_list __________________________\n\n    def test_average_of_empty_list():\n>       assert calculate_average([]) == 0.0\n               ^^^^^^^^^^^^^^^^^^^^^\n\ntest_solution.py:17: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nnumbers = []\n\n    def calculate_average(numbers):\n>       return sum(numbers) / len(numbers)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       ZeroDivisionError: division by zero\n\nsolution.py:2: ZeroDivisionError\n=========================== short test summary info ============================\nFAILED test_solution.py::test_average_of_empty_list - ZeroDivisionError: divi...\n1 failed, 3 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.128,
+                "started_at": "2026-11-07T22:39:38.695292Z",
+                "tests": {
+                  "test_solution.py::test_average_of_multiple_numbers": {
+                    "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_single_number": {
+                    "test_id": "test_solution.py::test_average_of_single_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_with_negative_numbers": {
+                    "test_id": "test_solution.py::test_average_with_negative_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_empty_list": {
+                    "test_id": "test_solution.py::test_average_of_empty_list",
+                    "outcome": "failed",
+                    "message": "ZeroDivisionError: division by zero",
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_solution.py::test_average_of_empty_list"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_solution.py"
+                ],
+                "targets": [
+                  "test_solution.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.13,
+                "started_at": "2026-11-07T22:39:45.971453Z",
+                "tests": {
+                  "test_solution.py::test_average_of_multiple_numbers": {
+                    "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_single_number": {
+                    "test_id": "test_solution.py::test_average_of_single_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_with_negative_numbers": {
+                    "test_id": "test_solution.py::test_average_with_negative_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_empty_list": {
+                    "test_id": "test_solution.py::test_average_of_empty_list",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.04,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.074,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.128,
+                "started_at": "2026-11-07T22:39:46.215790Z",
+                "tests": {
+                  "test_solution.py::test_average_of_multiple_numbers": {
+                    "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_single_number": {
+                    "test_id": "test_solution.py::test_average_of_single_number",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_with_negative_numbers": {
+                    "test_id": "test_solution.py::test_average_with_negative_numbers",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_solution.py::test_average_of_empty_list": {
+                    "test_id": "test_solution.py::test_average_of_empty_list",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_solution.py::test_average_of_empty_list",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_solution.py::test_average_of_single_number",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_solution.py::test_average_with_negative_numbers",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  }
+                ],
+                "fixed": [
+                  "test_solution.py::test_average_of_empty_list"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_solution.py::test_average_of_empty_list"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_solution.py::test_average_of_empty_list",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_solution.py::test_average_of_multiple_numbers",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_solution.py::test_average_of_single_number",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_solution.py::test_average_with_negative_numbers",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                }
+              ],
+              "fixed": [
+                "test_solution.py::test_average_of_empty_list"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_solution.py::test_average_of_empty_list"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_solution.py::test_average_of_empty_list) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.376,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_solution.py"
+              ],
+              "snapshot_hash": "740c88096f424a9face41f1aad2c8f452cfe7de3fbce0862a9987bc70186ae9f",
+              "source_revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "af929096cee4bf0c3818bec267d8183b680fab2b976c15c45c413a9c831ebebc"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_solution.py::test_average_of_empty_list) and every required check passed in an isolated workspace. The original repository was not modified."
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "740c88096f424a9face41f1aad2c8f452cfe7de3fbce0862a9987bc70186ae9f",
+        "file_count": 2,
+        "total_bytes": 444,
+        "revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+        "dirty": false,
+        "skipped": [],
+        "captured_at": "2026-11-07T22:39:38.249607Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_solution.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "cited as evidence E2",
+              "imports affected module solution.py",
+              "named after affected file solution.py",
+              "imports an affected symbol"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": []
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_solution.py::test_average_of_empty_list"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_solution.py::test_average_of_empty_list) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 7.987,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 760,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 1960
+      },
+      "original_repository_modified": false
+    },
+    {
+      "execution_id": "8f6a2174-7cf9-4019-86f8-0bc816ad8fc9",
+      "investigation_id": "8a08813d-2c81-5ade-aee6-a845aed66101",
+      "repository_id": "bench-bug-002-missing-record",
+      "status": "verified",
+      "final_patch_id": "9355411c-b2b7-4e51-bdaf-68997f1acee8",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "9355411c-b2b7-4e51-bdaf-68997f1acee8",
+            "investigation_id": "8a08813d-2c81-5ade-aee6-a845aed66101",
+            "repository_id": "bench-bug-002-missing-record",
+            "execution_id": "8f6a2174-7cf9-4019-86f8-0bc816ad8fc9",
+            "attempt_number": 1,
+            "description": "Adds a None check in get_user_profile so a missing user gets a 404 with an error body instead of an AttributeError that the broad except turns into a 500.",
+            "unified_diff": "--- a/users_api/routes.py\n+++ b/users_api/routes.py\n@@ -5,6 +5,8 @@\n     \"\"\"GET /users/{user_id}. Returns (status_code, body).\"\"\"\n     try:\n         user = service.get_user(user_id)\n+        if user is None:\n+            return 404, {\"error\": \"user not found\"}\n         return 200, {\"id\": user.id, \"email\": user.email}\n     except Exception:\n         return 500, {\"error\": \"internal server error\"}\n",
+            "affected_files": [
+              "users_api/routes.py"
+            ],
+            "rationale": "UserRepository.find_by_id returns None when there is no record, and UserService.get_user passes that None through. get_user_profile then read user.id on None. The broad except caught the resulting AttributeError and returned a 500. The route now checks for None before reading the user's fields and returns 404. This matches the existing contract that the repository and service return None for a missing user, so those layers are unchanged and real unexpected errors still produce a 500.",
+            "assumptions": [
+              "The tests only check the status code, so the 404 body was my choice. It uses the same {\"error\": ...} shape as the 500 response.",
+              "Returning None for a missing user is the intended contract of UserRepository.find_by_id and UserService.get_user, so the missing-user case is handled in the route layer."
+            ],
+            "risks": [
+              "Any client that relied on getting a 500 for missing users will now get a 404.",
+              "The broad except Exception is still there, so other unexpected errors will still be hidden behind a 500."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-07T22:39:52.703518Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 709,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 2517
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "users_api/routes.py"
+            ],
+            "added_lines": 2,
+            "removed_lines": 0,
+            "diff_sha256": "8c1e47a7675cd20f34936e07e6c099129a9a8b3201f483700c05c2057f16a2c4"
+          },
+          "workspace": {
+            "workspace_id": "8f6a2174-patched-1-8r1krnbz",
+            "label": "patched-1",
+            "snapshot_hash": "8c82308ce82f2532fa13b4031d0e0e1d969f6aa2ba0342b9460a364e24b81e96",
+            "file_count": 5,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "users_api/routes.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.02
+          },
+          "verification": {
+            "verification_id": "eb3e6d39-fd8a-437f-b474-3010a4323383",
+            "patch_id": "9355411c-b2b7-4e51-bdaf-68997f1acee8",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.02,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "users_api/routes.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.128,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.128,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "1 fixed, 1 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.02,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 1,
+                  "patched_violations": 1
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.13,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "1 fixed, 1 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 2
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "tests/test_routes.py"
+                  ],
+                  "targets": [
+                    "tests/test_routes.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".F                                                                       [100%]\n=================================== FAILURES ===================================\n________________________ test_missing_user_returns_404 _________________________\n\n    def test_missing_user_returns_404():\n        status, _ = get_user_profile(make_service(), 999)\n>       assert status == 404\nE       assert 500 == 404\n\ntests/test_routes.py:16: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_routes.py::test_missing_user_returns_404 - assert 500 == 404\n1 failed, 1 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.13,
+                  "started_at": "2026-11-07T22:39:46.365854Z",
+                  "tests": {
+                    "tests/test_routes.py::test_existing_user_returns_profile": {
+                      "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "tests/test_routes.py::test_missing_user_returns_404": {
+                      "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                      "outcome": "failed",
+                      "message": "assert 500 == 404",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "tests/test_routes.py"
+                  ],
+                  "targets": [
+                    "tests/test_routes.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".F                                                                       [100%]\n=================================== FAILURES ===================================\n________________________ test_missing_user_returns_404 _________________________\n\n    def test_missing_user_returns_404():\n        status, _ = get_user_profile(make_service(), 999)\n>       assert status == 404\nE       assert 500 == 404\n\ntests/test_routes.py:16: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_routes.py::test_missing_user_returns_404 - assert 500 == 404\n1 failed, 1 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.128,
+                  "started_at": "2026-11-07T22:39:46.494025Z",
+                  "tests": {
+                    "tests/test_routes.py::test_existing_user_returns_profile": {
+                      "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "tests/test_routes.py::test_missing_user_returns_404": {
+                      "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                      "outcome": "failed",
+                      "message": "assert 500 == 404",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": ".F                                                                       [100%]\n=================================== FAILURES ===================================\n________________________ test_missing_user_returns_404 _________________________\n\n    def test_missing_user_returns_404():\n        status, _ = get_user_profile(make_service(), 999)\n>       assert status == 404\nE       assert 500 == 404\n\ntests/test_routes.py:16: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_routes.py::test_missing_user_returns_404 - assert 500 == 404\n1 failed, 1 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.129,
+                "started_at": "2026-11-07T22:39:46.623812Z",
+                "tests": {
+                  "tests/test_routes.py::test_existing_user_returns_profile": {
+                    "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "tests/test_routes.py::test_missing_user_returns_404": {
+                    "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                    "outcome": "failed",
+                    "message": "assert 500 == 404",
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "tests/test_routes.py::test_missing_user_returns_404"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "tests/test_routes.py"
+                ],
+                "targets": [
+                  "tests/test_routes.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.128,
+                "started_at": "2026-11-07T22:39:52.885230Z",
+                "tests": {
+                  "tests/test_routes.py::test_existing_user_returns_profile": {
+                    "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "tests/test_routes.py::test_missing_user_returns_404": {
+                    "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [
+                  {
+                    "file": "users_api/routes.py",
+                    "code": "BLE001",
+                    "message": "Do not catch blind exception: `Exception`",
+                    "line": 11
+                  }
+                ],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.02,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [
+                  {
+                    "file": "users_api/routes.py",
+                    "code": "BLE001",
+                    "message": "Do not catch blind exception: `Exception`",
+                    "line": 9
+                  }
+                ],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.13,
+                "started_at": "2026-11-07T22:39:53.075973Z",
+                "tests": {
+                  "tests/test_routes.py::test_existing_user_returns_profile": {
+                    "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "tests/test_routes.py::test_missing_user_returns_404": {
+                    "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "tests/test_routes.py::test_missing_user_returns_404"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "tests/test_routes.py::test_missing_user_returns_404"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "1 fixed, 1 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "tests/test_routes.py::test_existing_user_returns_profile",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "tests/test_routes.py::test_missing_user_returns_404",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "tests/test_routes.py::test_missing_user_returns_404"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "tests/test_routes.py::test_missing_user_returns_404"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "1 fixed, 1 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (tests/test_routes.py::test_missing_user_returns_404) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.32,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "tests/test_routes.py"
+              ],
+              "snapshot_hash": "8c82308ce82f2532fa13b4031d0e0e1d969f6aa2ba0342b9460a364e24b81e96",
+              "source_revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "8c1e47a7675cd20f34936e07e6c099129a9a8b3201f483700c05c2057f16a2c4"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (tests/test_routes.py::test_missing_user_returns_404) and every required check passed in an isolated workspace. The original repository was not modified."
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "8c82308ce82f2532fa13b4031d0e0e1d969f6aa2ba0342b9460a364e24b81e96",
+        "file_count": 5,
+        "total_bytes": 1541,
+        "revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+        "dirty": false,
+        "skipped": [],
+        "captured_at": "2026-11-07T22:39:46.234202Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "tests/test_routes.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module users_api/repository.py, users_api/routes.py, users_api/service.py",
+              "named after affected file users_api/routes.py",
+              "imports an affected symbol"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": []
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "tests/test_routes.py::test_missing_user_returns_404"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 2
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (tests/test_routes.py::test_missing_user_returns_404) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 6.858,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 709,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 2517
+      },
+      "original_repository_modified": false
+    },
+    {
+      "execution_id": "4e567099-ce0b-4e5c-a208-fb41fbba1602",
+      "investigation_id": "cc770037-0008-5ccf-bdf4-86e0d934954f",
+      "repository_id": "bench-bug-003-pagination",
+      "status": "verified",
+      "final_patch_id": "4710052e-d3b9-4f5f-ae5b-a695c2292385",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "4710052e-d3b9-4f5f-ae5b-a695c2292385",
+            "investigation_id": "cc770037-0008-5ccf-bdf4-86e0d934954f",
+            "repository_id": "bench-bug-003-pagination",
+            "execution_id": "4e567099-ce0b-4e5c-a208-fb41fbba1602",
+            "attempt_number": 1,
+            "description": "Change total_pages to use ceiling division so a partial last page is counted. paginate then returns that last page instead of an empty list.",
+            "unified_diff": "--- a/pagination.py\n+++ b/pagination.py\n@@ -1,5 +1,5 @@\n def total_pages(item_count: int, per_page: int) -> int:\n-    return item_count // per_page\n+    return -(-item_count // per_page)\n \n \n def paginate(items: list, page: int, per_page: int) -> list:\n",
+            "affected_files": [
+              "pagination.py"
+            ],
+            "rationale": "total_pages used floor division (item_count // per_page), so 5 items at 2 per page gave 2 pages instead of 3. paginate treated page 3 as past the end and returned []. Ceiling division (-(-a // b)) counts the partial page. Full pages and pages past the end behave as before.",
+            "assumptions": [
+              "per_page is a positive integer and item_count is non-negative, as the existing code already assumes."
+            ],
+            "risks": [
+              "Any caller that relied on total_pages leaving out the partial last page will now get one more page.",
+              "Negative item counts would round differently, but they are not valid input."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-07T22:39:57.804555Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 503,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 2117
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "pagination.py"
+            ],
+            "added_lines": 1,
+            "removed_lines": 1,
+            "diff_sha256": "d248546d6924f80a4ecb7cd7c2a2b6c647e15172c6e15705493c4260278cb159"
+          },
+          "workspace": {
+            "workspace_id": "4e567099-patched-1-r2umiv9k",
+            "label": "patched-1",
+            "snapshot_hash": "d3016599f6b76f13d12267b63de3d03eea4f51fd8629eb1488e03e8cac3a43b2",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "pagination.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.024
+          },
+          "verification": {
+            "verification_id": "0024951b-85a3-4d0e-b48a-6c624112f8f0",
+            "patch_id": "4710052e-d3b9-4f5f-ae5b-a695c2292385",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.024,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "pagination.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.129,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_pagination.py::test_partial_last_page",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.129,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.039,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 0,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.132,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_pagination.py"
+                  ],
+                  "targets": [
+                    "test_pagination.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..F.                                                                     [100%]\n=================================== FAILURES ===================================\n____________________________ test_partial_last_page ____________________________\n\n    def test_partial_last_page():\n>       assert paginate([1, 2, 3, 4, 5], page=3, per_page=2) == [5]\nE       assert [] == [5]\nE         \nE         Right contains one more item: 5\nE         Use -v to get more diff\n\ntest_pagination.py:13: AssertionError\n=========================== short test summary info ============================\nFAILED test_pagination.py::test_partial_last_page - assert [] == [5]\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.184,
+                  "started_at": "2026-11-07T22:39:53.279075Z",
+                  "tests": {
+                    "test_pagination.py::test_first_page": {
+                      "test_id": "test_pagination.py::test_first_page",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_full_last_page": {
+                      "test_id": "test_pagination.py::test_full_last_page",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_partial_last_page": {
+                      "test_id": "test_pagination.py::test_partial_last_page",
+                      "outcome": "failed",
+                      "message": "assert [] == [5]\n  \n  Right contains one more item: 5\n  Use -v to get more diff",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_page_beyond_end_is_empty": {
+                      "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_pagination.py"
+                  ],
+                  "targets": [
+                    "test_pagination.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..F.                                                                     [100%]\n=================================== FAILURES ===================================\n____________________________ test_partial_last_page ____________________________\n\n    def test_partial_last_page():\n>       assert paginate([1, 2, 3, 4, 5], page=3, per_page=2) == [5]\nE       assert [] == [5]\nE         \nE         Right contains one more item: 5\nE         Use -v to get more diff\n\ntest_pagination.py:13: AssertionError\n=========================== short test summary info ============================\nFAILED test_pagination.py::test_partial_last_page - assert [] == [5]\n1 failed, 3 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.132,
+                  "started_at": "2026-11-07T22:39:53.411662Z",
+                  "tests": {
+                    "test_pagination.py::test_first_page": {
+                      "test_id": "test_pagination.py::test_first_page",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_full_last_page": {
+                      "test_id": "test_pagination.py::test_full_last_page",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_partial_last_page": {
+                      "test_id": "test_pagination.py::test_partial_last_page",
+                      "outcome": "failed",
+                      "message": "assert [] == [5]\n  \n  Right contains one more item: 5\n  Use -v to get more diff",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pagination.py::test_page_beyond_end_is_empty": {
+                      "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "..F.                                                                     [100%]\n=================================== FAILURES ===================================\n____________________________ test_partial_last_page ____________________________\n\n    def test_partial_last_page():\n>       assert paginate([1, 2, 3, 4, 5], page=3, per_page=2) == [5]\nE       assert [] == [5]\nE         \nE         Right contains one more item: 5\nE         Use -v to get more diff\n\ntest_pagination.py:13: AssertionError\n=========================== short test summary info ============================\nFAILED test_pagination.py::test_partial_last_page - assert [] == [5]\n1 failed, 3 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.125,
+                "started_at": "2026-11-07T22:39:53.537277Z",
+                "tests": {
+                  "test_pagination.py::test_first_page": {
+                    "test_id": "test_pagination.py::test_first_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_full_last_page": {
+                    "test_id": "test_pagination.py::test_full_last_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_partial_last_page": {
+                    "test_id": "test_pagination.py::test_partial_last_page",
+                    "outcome": "failed",
+                    "message": "assert [] == [5]\n  \n  Right contains one more item: 5\n  Use -v to get more diff",
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_page_beyond_end_is_empty": {
+                    "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_pagination.py::test_partial_last_page"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_pagination.py"
+                ],
+                "targets": [
+                  "test_pagination.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.129,
+                "started_at": "2026-11-07T22:39:58.015557Z",
+                "tests": {
+                  "test_pagination.py::test_first_page": {
+                    "test_id": "test_pagination.py::test_first_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_full_last_page": {
+                    "test_id": "test_pagination.py::test_full_last_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_partial_last_page": {
+                    "test_id": "test_pagination.py::test_partial_last_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_page_beyond_end_is_empty": {
+                    "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.132,
+                "started_at": "2026-11-07T22:39:58.226689Z",
+                "tests": {
+                  "test_pagination.py::test_first_page": {
+                    "test_id": "test_pagination.py::test_first_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_full_last_page": {
+                    "test_id": "test_pagination.py::test_full_last_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_partial_last_page": {
+                    "test_id": "test_pagination.py::test_partial_last_page",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pagination.py::test_page_beyond_end_is_empty": {
+                    "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_pagination.py::test_first_page",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_pagination.py::test_full_last_page",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_pagination.py::test_partial_last_page",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "test_pagination.py::test_partial_last_page"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_pagination.py::test_partial_last_page"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_pagination.py::test_first_page",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_pagination.py::test_full_last_page",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_pagination.py::test_page_beyond_end_is_empty",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_pagination.py::test_partial_last_page",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "test_pagination.py::test_partial_last_page"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_pagination.py::test_partial_last_page"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "1 fixed, 3 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_pagination.py::test_partial_last_page) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.342,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_pagination.py"
+              ],
+              "snapshot_hash": "d3016599f6b76f13d12267b63de3d03eea4f51fd8629eb1488e03e8cac3a43b2",
+              "source_revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "d248546d6924f80a4ecb7cd7c2a2b6c647e15172c6e15705493c4260278cb159"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_pagination.py::test_partial_last_page) and every required check passed in an isolated workspace. The original repository was not modified."
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "d3016599f6b76f13d12267b63de3d03eea4f51fd8629eb1488e03e8cac3a43b2",
+        "file_count": 2,
+        "total_bytes": 801,
+        "revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+        "dirty": false,
+        "skipped": [],
+        "captured_at": "2026-11-07T22:39:53.093632Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_pagination.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module pagination.py",
+              "named after affected file pagination.py"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": []
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_pagination.py::test_partial_last_page"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_pagination.py::test_partial_last_page) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 5.149,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 503,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 2117
+      },
+      "original_repository_modified": false
+    },
+    {
+      "execution_id": "a4bbb617-fbe3-4f62-91a6-c156683dc43b",
+      "investigation_id": "971268dc-7572-5faf-94f3-8101f30ff4ac",
+      "repository_id": "bench-bug-004-discount",
+      "status": "verified",
+      "final_patch_id": "0b25f4c0-9e67-4cc5-8021-b9617f41cc17",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "0b25f4c0-9e67-4cc5-8021-b9617f41cc17",
+            "investigation_id": "971268dc-7572-5faf-94f3-8101f30ff4ac",
+            "repository_id": "bench-bug-004-discount",
+            "execution_id": "a4bbb617-fbe3-4f62-91a6-c156683dc43b",
+            "attempt_number": 1,
+            "description": "Make apply_discount return the discounted price it already computes, not the original price.",
+            "unified_diff": "--- a/pricing.py\n+++ b/pricing.py\n@@ -3,7 +3,7 @@\n     if not 0 <= percent <= 100:\n         raise ValueError(\"percent must be between 0 and 100\")\n     discounted = round(price * (1 - percent / 100), 2)\n-    return round(price, 2)\n+    return discounted\n \n \n def order_total(prices: list[float], percent: float) -> float:\n",
+            "affected_files": [
+              "pricing.py"
+            ],
+            "rationale": "The root cause is that apply_discount computes `discounted` and then returns round(price, 2), which throws the discount away. Returning `discounted` fixes apply_discount directly. order_total sums apply_discount results, so it is fixed too.",
+            "assumptions": [
+              "The existing formula round(price * (1 - percent / 100), 2) is the intended discount calculation, including rounding to cents."
+            ],
+            "risks": [
+              "Callers that relied on the old behaviour (getting the undiscounted price back) will now receive discounted prices. That is the intended fix."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-07T22:40:03.065426Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 497,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 2181
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "pricing.py"
+            ],
+            "added_lines": 1,
+            "removed_lines": 1,
+            "diff_sha256": "7c928dc4d19d19f7cbc8ffd5170ba96004e493a9b27b597ff412a3ddb2fbf8f3"
+          },
+          "workspace": {
+            "workspace_id": "a4bbb617-patched-1-f5acb6nx",
+            "label": "patched-1",
+            "snapshot_hash": "f5687dc713a69671db14529a166d3fb73d8b90a1bea374060d532c864958b0f6",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "pricing.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.019
+          },
+          "verification": {
+            "verification_id": "e35a5a50-fbaa-45b5-9ea4-611196f8b836",
+            "patch_id": "0b25f4c0-9e67-4cc5-8021-b9617f41cc17",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.019,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "pricing.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.174,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_pricing.py::test_order_total_with_discount",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_pricing.py::test_ten_percent_discount",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.174,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.039,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 1,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.127,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_pricing.py"
+                  ],
+                  "targets": [
+                    "test_pricing.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".FF.                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_ten_percent_discount ___________________________\n\n    def test_ten_percent_discount():\n>       assert apply_discount(100.0, 10) == 90.0\nE       assert 100.0 == 90.0\nE        +  where 100.0 = apply_discount(100.0, 10)\n\ntest_pricing.py:10: AssertionError\n________________________ test_order_total_with_discount ________________________\n\n    def test_order_total_with_discount():\n>       assert order_total([10.0, 20.0], 50) == 15.0\nE       assert 30.0 == 15.0\nE        +  where 30.0 = order_total([10.0, 20.0], 50)\n\ntest_pricing.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED test_pricing.py::test_ten_percent_discount - assert 100.0 == 90.0\nFAILED test_pricing.py::test_order_total_with_discount - assert 30.0 == 15.0\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.18,
+                  "started_at": "2026-11-07T22:39:58.426124Z",
+                  "tests": {
+                    "test_pricing.py::test_no_discount": {
+                      "test_id": "test_pricing.py::test_no_discount",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_ten_percent_discount": {
+                      "test_id": "test_pricing.py::test_ten_percent_discount",
+                      "outcome": "failed",
+                      "message": "assert 100.0 == 90.0\n +  where 100.0 = apply_discount(100.0, 10)",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_order_total_with_discount": {
+                      "test_id": "test_pricing.py::test_order_total_with_discount",
+                      "outcome": "failed",
+                      "message": "assert 30.0 == 15.0\n +  where 30.0 = order_total([10.0, 20.0], 50)",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_invalid_percent": {
+                      "test_id": "test_pricing.py::test_invalid_percent",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_pricing.py"
+                  ],
+                  "targets": [
+                    "test_pricing.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": ".FF.                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_ten_percent_discount ___________________________\n\n    def test_ten_percent_discount():\n>       assert apply_discount(100.0, 10) == 90.0\nE       assert 100.0 == 90.0\nE        +  where 100.0 = apply_discount(100.0, 10)\n\ntest_pricing.py:10: AssertionError\n________________________ test_order_total_with_discount ________________________\n\n    def test_order_total_with_discount():\n>       assert order_total([10.0, 20.0], 50) == 15.0\nE       assert 30.0 == 15.0\nE        +  where 30.0 = order_total([10.0, 20.0], 50)\n\ntest_pricing.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED test_pricing.py::test_ten_percent_discount - assert 100.0 == 90.0\nFAILED test_pricing.py::test_order_total_with_discount - assert 30.0 == 15.0\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.131,
+                  "started_at": "2026-11-07T22:39:58.557450Z",
+                  "tests": {
+                    "test_pricing.py::test_no_discount": {
+                      "test_id": "test_pricing.py::test_no_discount",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_ten_percent_discount": {
+                      "test_id": "test_pricing.py::test_ten_percent_discount",
+                      "outcome": "failed",
+                      "message": "assert 100.0 == 90.0\n +  where 100.0 = apply_discount(100.0, 10)",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_order_total_with_discount": {
+                      "test_id": "test_pricing.py::test_order_total_with_discount",
+                      "outcome": "failed",
+                      "message": "assert 30.0 == 15.0\n +  where 30.0 = order_total([10.0, 20.0], 50)",
+                      "duration_seconds": 0.0
+                    },
+                    "test_pricing.py::test_invalid_percent": {
+                      "test_id": "test_pricing.py::test_invalid_percent",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": ".FF.                                                                     [100%]\n=================================== FAILURES ===================================\n__________________________ test_ten_percent_discount ___________________________\n\n    def test_ten_percent_discount():\n>       assert apply_discount(100.0, 10) == 90.0\nE       assert 100.0 == 90.0\nE        +  where 100.0 = apply_discount(100.0, 10)\n\ntest_pricing.py:10: AssertionError\n________________________ test_order_total_with_discount ________________________\n\n    def test_order_total_with_discount():\n>       assert order_total([10.0, 20.0], 50) == 15.0\nE       assert 30.0 == 15.0\nE        +  where 30.0 = order_total([10.0, 20.0], 50)\n\ntest_pricing.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED test_pricing.py::test_ten_percent_discount - assert 100.0 == 90.0\nFAILED test_pricing.py::test_order_total_with_discount - assert 30.0 == 15.0\n2 failed, 2 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.123,
+                "started_at": "2026-11-07T22:39:58.681691Z",
+                "tests": {
+                  "test_pricing.py::test_no_discount": {
+                    "test_id": "test_pricing.py::test_no_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_ten_percent_discount": {
+                    "test_id": "test_pricing.py::test_ten_percent_discount",
+                    "outcome": "failed",
+                    "message": "assert 100.0 == 90.0\n +  where 100.0 = apply_discount(100.0, 10)",
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_order_total_with_discount": {
+                    "test_id": "test_pricing.py::test_order_total_with_discount",
+                    "outcome": "failed",
+                    "message": "assert 30.0 == 15.0\n +  where 30.0 = order_total([10.0, 20.0], 50)",
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_invalid_percent": {
+                    "test_id": "test_pricing.py::test_invalid_percent",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_pricing.py::test_order_total_with_discount",
+                "test_pricing.py::test_ten_percent_discount"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_pricing.py"
+                ],
+                "targets": [
+                  "test_pricing.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.174,
+                "started_at": "2026-11-07T22:40:03.278560Z",
+                "tests": {
+                  "test_pricing.py::test_no_discount": {
+                    "test_id": "test_pricing.py::test_no_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_ten_percent_discount": {
+                    "test_id": "test_pricing.py::test_ten_percent_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_order_total_with_discount": {
+                    "test_id": "test_pricing.py::test_order_total_with_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_invalid_percent": {
+                    "test_id": "test_pricing.py::test_invalid_percent",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [
+                  {
+                    "file": "pricing.py",
+                    "code": "F841",
+                    "message": "Local variable `discounted` is assigned to but never used",
+                    "line": 5
+                  }
+                ],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.039,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.127,
+                "started_at": "2026-11-07T22:40:03.485929Z",
+                "tests": {
+                  "test_pricing.py::test_no_discount": {
+                    "test_id": "test_pricing.py::test_no_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_ten_percent_discount": {
+                    "test_id": "test_pricing.py::test_ten_percent_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_order_total_with_discount": {
+                    "test_id": "test_pricing.py::test_order_total_with_discount",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_pricing.py::test_invalid_percent": {
+                    "test_id": "test_pricing.py::test_invalid_percent",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_pricing.py::test_invalid_percent",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_pricing.py::test_no_discount",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_pricing.py::test_order_total_with_discount",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_pricing.py::test_ten_percent_discount",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  }
+                ],
+                "fixed": [
+                  "test_pricing.py::test_order_total_with_discount",
+                  "test_pricing.py::test_ten_percent_discount"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_pricing.py::test_order_total_with_discount",
+                  "test_pricing.py::test_ten_percent_discount"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_pricing.py::test_invalid_percent",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_pricing.py::test_no_discount",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_pricing.py::test_order_total_with_discount",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_pricing.py::test_ten_percent_discount",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                }
+              ],
+              "fixed": [
+                "test_pricing.py::test_order_total_with_discount",
+                "test_pricing.py::test_ten_percent_discount"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_pricing.py::test_order_total_with_discount",
+                "test_pricing.py::test_ten_percent_discount"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_pricing.py::test_order_total_with_discount, test_pricing.py::test_ten_percent_discount) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.383,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_pricing.py"
+              ],
+              "snapshot_hash": "f5687dc713a69671db14529a166d3fb73d8b90a1bea374060d532c864958b0f6",
+              "source_revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "7c928dc4d19d19f7cbc8ffd5170ba96004e493a9b27b597ff412a3ddb2fbf8f3"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_pricing.py::test_order_total_with_discount, test_pricing.py::test_ten_percent_discount) and every required check passed in an isolated workspace. The original repository was not modified."
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "f5687dc713a69671db14529a166d3fb73d8b90a1bea374060d532c864958b0f6",
+        "file_count": 2,
+        "total_bytes": 843,
+        "revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+        "dirty": false,
+        "skipped": [],
+        "captured_at": "2026-11-07T22:39:58.243858Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_pricing.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module pricing.py",
+              "named after affected file pricing.py",
+              "imports an affected symbol"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": []
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_pricing.py::test_order_total_with_discount",
+          "test_pricing.py::test_ten_percent_discount"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_pricing.py::test_order_total_with_discount, test_pricing.py::test_ten_percent_discount) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 5.258,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 497,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 2181
+      },
+      "original_repository_modified": false
+    },
+    {
+      "execution_id": "8aac0000-4255-437b-a58c-2a280827392c",
+      "investigation_id": "adc2025d-e8d4-5101-b751-0cda171ffc4a",
+      "repository_id": "bench-bug-005-config",
+      "status": "verified",
+      "final_patch_id": "7f549eeb-529e-449b-bd16-ce341fe9e517",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "status": "verified",
+          "proposal": {
+            "patch_id": "7f549eeb-529e-449b-bd16-ce341fe9e517",
+            "investigation_id": "adc2025d-e8d4-5101-b751-0cda171ffc4a",
+            "repository_id": "bench-bug-005-config",
+            "execution_id": "8aac0000-4255-437b-a58c-2a280827392c",
+            "attempt_number": 1,
+            "description": "load_port now falls back to DEFAULT_PORT only when PORT is missing. A non-numeric PORT raises ConfigError, chained from the original ValueError. An out-of-range PORT raises ConfigError instead of being swallowed.",
+            "unified_diff": "--- a/config_loader.py\n+++ b/config_loader.py\n@@ -7,10 +7,12 @@\n \n def load_port(env: dict[str, str]) -> int:\n     \"\"\"Read PORT from the environment. Missing means the default; invalid is an error.\"\"\"\n+    if \"PORT\" not in env:\n+        return DEFAULT_PORT\n     try:\n         port = int(env[\"PORT\"])\n-        if not 1 <= port <= 65535:\n-            raise ConfigError(f\"PORT out of range: {port}\")\n-        return port\n-    except Exception:\n-        return DEFAULT_PORT\n+    except ValueError as exc:\n+        raise ConfigError(f\"PORT is not a valid integer: {env['PORT']!r}\") from exc\n+    if not 1 <= port <= 65535:\n+        raise ConfigError(f\"PORT out of range: {port}\")\n+    return port\n",
+            "affected_files": [
+              "config_loader.py"
+            ],
+            "rationale": "The root cause is the broad `except Exception`. It catches the ValueError from int() and the ConfigError raised for out-of-range ports, then returns the default. With this change, a missing key (`\"PORT\" not in env`) is the only case that returns the default. The ValueError from int() becomes a ConfigError, and the range check's ConfigError is no longer inside a catch-all. The result matches the docstring: missing means the default, invalid is an error.",
+            "assumptions": [
+              "Only a missing PORT key should fall back to the default. Any value that is present but can't be used (including an empty string) is treated as a misconfiguration and raises ConfigError.",
+              "The env values are always strings (per the dict[str, str] type hint), so int() raises only ValueError, not TypeError."
+            ],
+            "risks": [
+              "Deployments that currently set PORT to something invalid (for example an empty string) and rely on the silent fallback to 8080 will now fail at startup with ConfigError. This is the intended behaviour, but it is a visible change."
+            ],
+            "status": "verified",
+            "created_at": "2026-11-07T22:40:11.090424Z",
+            "provider": "anthropic",
+            "model": "claude-opus-5-5",
+            "usage": {
+              "input_tokens": 4,
+              "output_tokens": 859,
+              "cache_read_input_tokens": 0,
+              "cache_creation_input_tokens": 2269
+            }
+          },
+          "validation": {
+            "valid": true,
+            "errors": [],
+            "warnings": [],
+            "affected_files": [
+              "config_loader.py"
+            ],
+            "added_lines": 7,
+            "removed_lines": 5,
+            "diff_sha256": "f83a478a0eb20e0ab1634a99afd6bfc03fdc43168ff5e8ab921e1cde65def623"
+          },
+          "workspace": {
+            "workspace_id": "8aac0000-patched-1-aedhkc0q",
+            "label": "patched-1",
+            "snapshot_hash": "d2b4a25543d47afd4d19c6bb85590d96490a3635b1973c767fec56dc80a15c15",
+            "file_count": 2,
+            "patch_applied": true,
+            "retained": false
+          },
+          "application": {
+            "applied": true,
+            "files_changed": [
+              "config_loader.py"
+            ],
+            "errors": [],
+            "error_kind": null,
+            "unexpected_changes": [],
+            "stdout": "",
+            "stderr": "",
+            "duration_seconds": 0.023
+          },
+          "verification": {
+            "verification_id": "f15295f7-2042-464e-b502-54e964b4febd",
+            "patch_id": "7f549eeb-529e-449b-bd16-ce341fe9e517",
+            "status": "verified",
+            "checks": [
+              {
+                "name": "patch_application",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.023,
+                "reason": null,
+                "details": {
+                  "files_changed": [
+                    "config_loader.py"
+                  ]
+                }
+              },
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              },
+              {
+                "name": "original_bug_test",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.182,
+                "reason": null,
+                "details": {
+                  "bug_tests": [
+                    {
+                      "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    },
+                    {
+                      "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                      "before": "failed",
+                      "after": "passed",
+                      "message": null
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "regression_tests",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "duration_seconds": 0.182,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "missing_after": [],
+                  "flaky_excluded": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+                }
+              },
+              {
+                "name": "ruff",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.04,
+                "reason": null,
+                "details": {
+                  "new_violations": [],
+                  "baseline_violations": 1,
+                  "patched_violations": 0
+                }
+              },
+              {
+                "name": "full_test_suite",
+                "status": "passed",
+                "required": true,
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "duration_seconds": 0.177,
+                "reason": null,
+                "details": {
+                  "regressed": [],
+                  "still_failing": [],
+                  "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass",
+                  "tests": 4
+                }
+              },
+              {
+                "name": "original_repository_unchanged",
+                "status": "passed",
+                "required": true,
+                "exit_code": null,
+                "stdout": "",
+                "stderr": "",
+                "duration_seconds": 0.0,
+                "reason": null,
+                "details": {}
+              }
+            ],
+            "before_results": {
+              "targeted_runs": [
+                {
+                  "label": "baseline-1",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_config_loader.py"
+                  ],
+                  "targets": [
+                    "test_config_loader.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_non_numeric_port_is_an_error _______________________\n\n    def test_non_numeric_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:14: Failed\n______________________ test_out_of_range_port_is_an_error ______________________\n\n    def test_out_of_range_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:19: Failed\n=========================== short test summary info ============================\nFAILED test_config_loader.py::test_non_numeric_port_is_an_error - Failed: DID...\nFAILED test_config_loader.py::test_out_of_range_port_is_an_error - Failed: DI...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.13,
+                  "started_at": "2026-11-07T22:40:03.634540Z",
+                  "tests": {
+                    "test_config_loader.py::test_missing_port_uses_default": {
+                      "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_valid_port": {
+                      "test_id": "test_config_loader.py::test_valid_port",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_non_numeric_port_is_an_error": {
+                      "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                      "outcome": "failed",
+                      "message": "Failed: DID NOT RAISE ConfigError",
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_out_of_range_port_is_an_error": {
+                      "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                      "outcome": "failed",
+                      "message": "Failed: DID NOT RAISE ConfigError",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                },
+                {
+                  "label": "baseline-2",
+                  "kind": "targeted",
+                  "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--no-header",
+                    "-o",
+                    "junit_family=xunit1",
+                    "--junitxml=<meta>/junit.xml",
+                    "--rootdir=.",
+                    "test_config_loader.py"
+                  ],
+                  "targets": [
+                    "test_config_loader.py"
+                  ],
+                  "status": "completed",
+                  "exit_code": 1,
+                  "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_non_numeric_port_is_an_error _______________________\n\n    def test_non_numeric_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:14: Failed\n______________________ test_out_of_range_port_is_an_error ______________________\n\n    def test_out_of_range_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:19: Failed\n=========================== short test summary info ============================\nFAILED test_config_loader.py::test_non_numeric_port_is_an_error - Failed: DID...\nFAILED test_config_loader.py::test_out_of_range_port_is_an_error - Failed: DI...\n2 failed, 2 passed in 0.01s\n",
+                  "stderr": "",
+                  "output_truncated": false,
+                  "duration_seconds": 0.125,
+                  "started_at": "2026-11-07T22:40:03.760634Z",
+                  "tests": {
+                    "test_config_loader.py::test_missing_port_uses_default": {
+                      "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_valid_port": {
+                      "test_id": "test_config_loader.py::test_valid_port",
+                      "outcome": "passed",
+                      "message": null,
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_non_numeric_port_is_an_error": {
+                      "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                      "outcome": "failed",
+                      "message": "Failed: DID NOT RAISE ConfigError",
+                      "duration_seconds": 0.0
+                    },
+                    "test_config_loader.py::test_out_of_range_port_is_an_error": {
+                      "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                      "outcome": "failed",
+                      "message": "Failed: DID NOT RAISE ConfigError",
+                      "duration_seconds": 0.0
+                    }
+                  },
+                  "error": null
+                }
+              ],
+              "full_suite": {
+                "label": "baseline-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 1,
+                "stdout": "..FF                                                                     [100%]\n=================================== FAILURES ===================================\n______________________ test_non_numeric_port_is_an_error _______________________\n\n    def test_non_numeric_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:14: Failed\n______________________ test_out_of_range_port_is_an_error ______________________\n\n    def test_out_of_range_port_is_an_error():\n>       with pytest.raises(ConfigError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ConfigError\n\ntest_config_loader.py:19: Failed\n=========================== short test summary info ============================\nFAILED test_config_loader.py::test_non_numeric_port_is_an_error - Failed: DID...\nFAILED test_config_loader.py::test_out_of_range_port_is_an_error - Failed: DI...\n2 failed, 2 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.126,
+                "started_at": "2026-11-07T22:40:03.886807Z",
+                "tests": {
+                  "test_config_loader.py::test_missing_port_uses_default": {
+                    "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_valid_port": {
+                    "test_id": "test_config_loader.py::test_valid_port",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_non_numeric_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                    "outcome": "failed",
+                    "message": "Failed: DID NOT RAISE ConfigError",
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_out_of_range_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                    "outcome": "failed",
+                    "message": "Failed: DID NOT RAISE ConfigError",
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "bug_tests": [
+                "test_config_loader.py::test_non_numeric_port_is_an_error",
+                "test_config_loader.py::test_out_of_range_port_is_an_error"
+              ],
+              "flaky": [],
+              "reproducible": true,
+              "problems": []
+            },
+            "after_results": {
+              "syntax": [],
+              "targeted": {
+                "label": "patched",
+                "kind": "targeted",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=.",
+                  "test_config_loader.py"
+                ],
+                "targets": [
+                  "test_config_loader.py"
+                ],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.00s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.182,
+                "started_at": "2026-11-07T22:40:11.333128Z",
+                "tests": {
+                  "test_config_loader.py::test_missing_port_uses_default": {
+                    "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_valid_port": {
+                    "test_id": "test_config_loader.py::test_valid_port",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_non_numeric_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_out_of_range_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "ruff": {
+                "available": true,
+                "violations": [],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.04,
+                "timed_out": false
+              },
+              "ruff_baseline": {
+                "available": true,
+                "violations": [
+                  {
+                    "file": "config_loader.py",
+                    "code": "BLE001",
+                    "message": "Do not catch blind exception: `Exception`",
+                    "line": 15
+                  }
+                ],
+                "error": null,
+                "exit_code": 0,
+                "duration_seconds": 0.075,
+                "timed_out": false
+              },
+              "full_suite": {
+                "label": "patched-full",
+                "kind": "full_regression",
+                "command": [
+                  "python",
+                  "-m",
+                  "pytest",
+                  "-q",
+                  "-p",
+                  "no:cacheprovider",
+                  "--no-header",
+                  "-o",
+                  "junit_family=xunit1",
+                  "--junitxml=<meta>/junit.xml",
+                  "--rootdir=."
+                ],
+                "targets": [],
+                "status": "completed",
+                "exit_code": 0,
+                "stdout": "....                                                                     [100%]\n4 passed in 0.01s\n",
+                "stderr": "",
+                "output_truncated": false,
+                "duration_seconds": 0.177,
+                "started_at": "2026-11-07T22:40:11.627249Z",
+                "tests": {
+                  "test_config_loader.py::test_missing_port_uses_default": {
+                    "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_valid_port": {
+                    "test_id": "test_config_loader.py::test_valid_port",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_non_numeric_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  },
+                  "test_config_loader.py::test_out_of_range_port_is_an_error": {
+                    "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                    "outcome": "passed",
+                    "message": null,
+                    "duration_seconds": 0.0
+                  }
+                },
+                "error": null
+              },
+              "full_suite_comparison": {
+                "entries": [
+                  {
+                    "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  },
+                  {
+                    "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                    "before": "failed",
+                    "after": "passed",
+                    "classification": "fixed",
+                    "is_bug_test": true
+                  },
+                  {
+                    "test_id": "test_config_loader.py::test_valid_port",
+                    "before": "passed",
+                    "after": "passed",
+                    "classification": "preserved",
+                    "is_bug_test": false
+                  }
+                ],
+                "fixed": [
+                  "test_config_loader.py::test_non_numeric_port_is_an_error",
+                  "test_config_loader.py::test_out_of_range_port_is_an_error"
+                ],
+                "regressed": [],
+                "still_failing": [],
+                "new_failures": [],
+                "skipped": [],
+                "not_comparable": [],
+                "bug_tests": [
+                  "test_config_loader.py::test_non_numeric_port_is_an_error",
+                  "test_config_loader.py::test_out_of_range_port_is_an_error"
+                ],
+                "bug_tests_fixed": true,
+                "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+              }
+            },
+            "comparison": {
+              "entries": [
+                {
+                  "test_id": "test_config_loader.py::test_missing_port_uses_default",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                },
+                {
+                  "test_id": "test_config_loader.py::test_non_numeric_port_is_an_error",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_config_loader.py::test_out_of_range_port_is_an_error",
+                  "before": "failed",
+                  "after": "passed",
+                  "classification": "fixed",
+                  "is_bug_test": true
+                },
+                {
+                  "test_id": "test_config_loader.py::test_valid_port",
+                  "before": "passed",
+                  "after": "passed",
+                  "classification": "preserved",
+                  "is_bug_test": false
+                }
+              ],
+              "fixed": [
+                "test_config_loader.py::test_non_numeric_port_is_an_error",
+                "test_config_loader.py::test_out_of_range_port_is_an_error"
+              ],
+              "regressed": [],
+              "still_failing": [],
+              "new_failures": [],
+              "skipped": [],
+              "not_comparable": [],
+              "bug_tests": [
+                "test_config_loader.py::test_non_numeric_port_is_an_error",
+                "test_config_loader.py::test_out_of_range_port_is_an_error"
+              ],
+              "bug_tests_fixed": true,
+              "summary": "2 fixed, 2 preserved, 0 regressed, 0 still failing; all bug tests pass"
+            },
+            "summary": "The patch fixes the original failure (test_config_loader.py::test_non_numeric_port_is_an_error, test_config_loader.py::test_out_of_range_port_is_an_error) and every required check passed in an isolated workspace. The original repository was not modified.",
+            "failure_reasons": [],
+            "duration_seconds": 0.477,
+            "environment": {
+              "python": "3.12.13",
+              "platform": "darwin",
+              "pytest": "9.2.0",
+              "ruff": "0.17.3",
+              "environment_variables": [
+                "HOME",
+                "LANG",
+                "LC_ALL",
+                "NO_COLOR",
+                "PATH",
+                "PYTHONDONTWRITEBYTECODE",
+                "PYTHONHASHSEED",
+                "PYTHONNOUSERSITE",
+                "PYTHONUTF8",
+                "SYSTEMROOT",
+                "TMPDIR"
+              ],
+              "test_command": [
+                "python",
+                "-m",
+                "pytest",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--no-header",
+                "-o",
+                "junit_family=xunit1",
+                "--junitxml=<meta>/junit.xml",
+                "--rootdir=.",
+                "test_config_loader.py"
+              ],
+              "snapshot_hash": "d2b4a25543d47afd4d19c6bb85590d96490a3635b1973c767fec56dc80a15c15",
+              "source_revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+              "baseline_runs": 2,
+              "timeout_policy": "reject",
+              "check_timeout_seconds": 60.0,
+              "canonical_diff_sha256": "f83a478a0eb20e0ab1634a99afd6bfc03fdc43168ff5e8ab921e1cde65def623"
+            }
+          },
+          "failure_reason": null,
+          "summary": "The patch fixes the original failure (test_config_loader.py::test_non_numeric_port_is_an_error, test_config_loader.py::test_out_of_range_port_is_an_error) and every required check passed in an isolated workspace. The original repository was not modified."
+        }
+      ],
+      "source_snapshot": {
+        "root_hash": "d2b4a25543d47afd4d19c6bb85590d96490a3635b1973c767fec56dc80a15c15",
+        "file_count": 2,
+        "total_bytes": 908,
+        "revision": "187d4aa5f96160bf5cfb7731529321209d983cc8",
+        "dirty": false,
+        "skipped": [],
+        "captured_at": "2026-11-07T22:40:03.503020Z"
+      },
+      "test_selection": {
+        "items": [
+          {
+            "target": "test_config_loader.py",
+            "kind": "targeted",
+            "reasons": [
+              "failed during the investigation (failed)",
+              "named in the diagnosis",
+              "imports affected module config_loader.py",
+              "named after affected file config_loader.py",
+              "imports an affected symbol"
+            ],
+            "bug_test_names": [],
+            "reproduces_bug": true,
+            "priority": 0
+          }
+        ],
+        "full_suite": true,
+        "truncated": false,
+        "warnings": []
+      },
+      "baseline": {
+        "reproducible": true,
+        "bug_tests": [
+          "test_config_loader.py::test_non_numeric_port_is_an_error",
+          "test_config_loader.py::test_out_of_range_port_is_an_error"
+        ],
+        "flaky": [],
+        "problems": [],
+        "tests": 4
+      },
+      "summary": "Attempt 1 of 1 attempt(s): The patch fixes the original failure (test_config_loader.py::test_non_numeric_port_is_an_error, test_config_loader.py::test_out_of_range_port_is_an_error) and every required check passed in an isolated workspace. The original repository was not modified.",
+      "failure_reason": null,
+      "stop_reason": "verified",
+      "duration_seconds": 8.142,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 859,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 2269
+      },
+      "original_repository_modified": false
+    }
+  ]
+}

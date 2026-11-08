@@ -9,7 +9,9 @@ Sources, in priority order (lower number first when the count limit applies):
    (``test_<module>.py``);
 4. test files that import a module which imports an affected module (one hop
    through the import graph);
-5. suggestions (for example from a model), accepted only after the same validation.
+5. suggestions (the code graph, or a model), accepted only after the same
+   validation. A suggestion's priority is never better than 3, so it cannot
+   outrank what the investigation itself ran or cited.
 
 Every target is validated: a relative path inside the repository, a pytest file
 name, an existing regular file, not reached through a symlink. Anything else is
@@ -22,6 +24,7 @@ import re
 from pathlib import Path, PurePosixPath
 
 from app.agents.schemas import RootCauseAnalysis
+from app.patching.graph_tests import Suggestion
 from app.patching.models import TestSelection, TestSelectionItem
 from app.patching.workspace import EXCLUDED_DIRECTORIES
 from app.tools.base import ToolInputError, ToolPermissionError, resolve_in_repository
@@ -29,6 +32,7 @@ from app.tools.base import ToolInputError, ToolPermissionError, resolve_in_repos
 TEST_FILE = re.compile(r"^(test_.*|.*_test)\.py$")
 TEST_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*(\[[^\]]{0,200}\])?$")
 MAX_SCANNED_FILES = 5_000
+MIN_SUGGESTION_PRIORITY = 3  # suggestions rank after investigation-sourced tests (0-2)
 
 
 def validate_test_target(root: Path, raw: str) -> tuple[str, str | None]:
@@ -99,7 +103,7 @@ class _Collector:
         self.items: dict[str, TestSelectionItem] = {}
         self.warnings: list[str] = []
 
-    def add(self, raw: str, reason: str, priority: int, *, reproduces: bool = False) -> None:
+    def add(self, raw: str, reason: str, priority: int, *, reproduces: bool = False, score: float = 0.0) -> None:
         try:
             relative, name = validate_test_target(self.root, raw)
         except ValueError as exc:
@@ -108,7 +112,10 @@ class _Collector:
         item = self.items.get(relative)
         if item is None:
             item = self.items[relative] = TestSelectionItem(target=relative, priority=priority)
-        item.priority = min(item.priority, priority)
+        if priority < item.priority:
+            item.priority, item.score = priority, score
+        elif priority == item.priority:
+            item.score = max(item.score, score)
         if reason not in item.reasons:
             item.reasons.append(reason)
         if reproduces:
@@ -125,7 +132,7 @@ def select_tests(
     affected_symbols: list[str] | None = None,
     max_test_files: int = 20,
     include_full_suite: bool = True,
-    suggested: list[str] | None = None,
+    suggested: list["str | Suggestion"] | None = None,
 ) -> TestSelection:
     """Select targeted tests for ``affected_files`` in the workspace at ``root``."""
     root = root.resolve()
@@ -180,9 +187,12 @@ def select_tests(
             collect.add(relative, f"imports {indirect[0]} (one hop)", 4)
 
     for raw in suggested or []:
-        collect.add(raw, "suggested", 5)
+        if isinstance(raw, Suggestion):
+            collect.add(raw.target, raw.reason, max(MIN_SUGGESTION_PRIORITY, raw.priority), score=raw.score)
+        else:
+            collect.add(raw, "suggested", 5)
 
-    ordered = sorted(collect.items.values(), key=lambda item: (item.priority, item.target))
+    ordered = sorted(collect.items.values(), key=lambda item: (item.priority, -item.score, item.target))
     truncated = len(ordered) > max_test_files
     kept = ordered[:max_test_files]
     if truncated and any(item.reproduces_bug for item in ordered[max_test_files:]):

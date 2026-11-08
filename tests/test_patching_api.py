@@ -163,3 +163,13 @@ def test_llm_timeout_maps_to_504_without_internals(client, investigation, holder
     body = response.json()
     assert body["failure_reason"] == "llm_timeout" and body["status"] == "failed"
     assert "secret internal detail" not in response.text and "Traceback" not in response.text
+
+
+def test_unknown_model_price_is_503_and_budget_is_reported(client, investigation, holder):
+    holder["llm"] = FakeLLM([submit(AVERAGE_FIX)], model="unpriced-model", pricing=None)
+    response = post(client, investigation())
+    assert response.status_code == 503 and "price" in response.json()["detail"]
+    assert holder["llm"].calls == []
+    holder["llm"] = FakeLLM([submit(AVERAGE_FIX)])
+    body = post(client, investigation()).json()
+    assert body["llm_budget"]["requests"] == 1 and body["llm_budget"]["max_cost_usd"] == 1.0

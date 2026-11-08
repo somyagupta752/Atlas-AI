@@ -6,10 +6,28 @@
     "repository_path": "benchmarks/bug_001_average",
     "bug_report": "The average calculation crashes when the input list is empty. I expected calculate_average([]) to return 0.0.",
     "expected_root_cause": "calculate_average divides sum(numbers) by len(numbers) without handling an empty list, so len() is 0 and a ZeroDivisionError is raised.",
-    "root_cause_keywords": [["divi", "zero", "zerodivisionerror"], ["empty", "len"]],
-    "expected_files": ["solution.py", "test_solution.py"],
-    "expected_symbols": ["calculate_average"],
-    "required_evidence": ["source_code:solution.py", "execution:ZeroDivisionError"]
+    "root_cause_keywords": [
+      [
+        "divi",
+        "zero",
+        "zerodivisionerror"
+      ],
+      [
+        "empty",
+        "len"
+      ]
+    ],
+    "expected_files": [
+      "solution.py",
+      "test_solution.py"
+    ],
+    "expected_symbols": [
+      "calculate_average"
+    ],
+    "required_evidence": [
+      "source_code:solution.py",
+      "execution:ZeroDivisionError"
+    ]
   },
   {
     "case_id": "bug-002-missing-record",
@@ -18,10 +36,33 @@
     "repository_path": "benchmarks/bug_002_missing_record",
     "bug_report": "When I call GET /users/999 for a user that does not exist, the API returns a 500 error. I expected a 404 response.",
     "expected_root_cause": "UserRepository.find_by_id returns None for a missing user, UserService.get_user passes it through, and get_user_profile reads user.id without checking for None. The AttributeError is caught by the broad except and turned into a 500.",
-    "root_cause_keywords": [["none"], ["get_user_profile", "route", "attribute", "user.id", "user.email"]],
-    "expected_files": ["users_api/routes.py", "users_api/service.py", "users_api/repository.py", "tests/test_routes.py"],
-    "expected_symbols": ["get_user_profile", "UserService.get_user", "UserRepository.find_by_id"],
-    "required_evidence": ["source_code:users_api/routes.py", "source_code:users_api/repository.py"]
+    "root_cause_keywords": [
+      [
+        "none"
+      ],
+      [
+        "get_user_profile",
+        "route",
+        "attribute",
+        "user.id",
+        "user.email"
+      ]
+    ],
+    "expected_files": [
+      "users_api/routes.py",
+      "users_api/service.py",
+      "users_api/repository.py",
+      "tests/test_routes.py"
+    ],
+    "expected_symbols": [
+      "get_user_profile",
+      "UserService.get_user",
+      "UserRepository.find_by_id"
+    ],
+    "required_evidence": [
+      "source_code:users_api/routes.py",
+      "source_code:users_api/repository.py"
+    ]
   },
   {
     "case_id": "bug-003-pagination",
@@ -30,10 +71,27 @@
     "repository_path": "benchmarks/bug_003_pagination",
     "bug_report": "The last page of results is missing. With 5 items and 2 per page, page 3 should show the 5th item, but it is empty.",
     "expected_root_cause": "total_pages uses floor division (item_count // per_page), so a partial last page is not counted and paginate treats page 3 as beyond the end. It should round up.",
-    "root_cause_keywords": [["total_pages", "floor", "//", "round", "ceil"]],
-    "expected_files": ["pagination.py", "test_pagination.py"],
-    "expected_symbols": ["total_pages", "paginate"],
-    "required_evidence": ["source_code:pagination.py", "execution:test_partial_last_page"]
+    "root_cause_keywords": [
+      [
+        "total_pages",
+        "floor",
+        "//",
+        "round",
+        "ceil"
+      ]
+    ],
+    "expected_files": [
+      "pagination.py",
+      "test_pagination.py"
+    ],
+    "expected_symbols": [
+      "total_pages",
+      "paginate"
+    ],
+    "required_evidence": [
+      "source_code:pagination.py",
+      "execution:test_partial_last_page"
+    ]
   },
   {
     "case_id": "bug-004-discount",
@@ -42,10 +100,27 @@
     "repository_path": "benchmarks/bug_004_discount",
     "bug_report": "Discounts are not applied: a 10% discount on a 100.00 item still charges 100.00, and order totals ignore the discount.",
     "expected_root_cause": "apply_discount computes the discounted price into a local variable but returns the original price instead.",
-    "root_cause_keywords": [["return"], ["discounted", "original price", "price instead"]],
-    "expected_files": ["pricing.py", "test_pricing.py"],
-    "expected_symbols": ["apply_discount"],
-    "required_evidence": ["source_code:pricing.py", "execution:test_ten_percent_discount"]
+    "root_cause_keywords": [
+      [
+        "return"
+      ],
+      [
+        "discounted",
+        "original price",
+        "price instead"
+      ]
+    ],
+    "expected_files": [
+      "pricing.py",
+      "test_pricing.py"
+    ],
+    "expected_symbols": [
+      "apply_discount"
+    ],
+    "required_evidence": [
+      "source_code:pricing.py",
+      "execution:test_ten_percent_discount"
+    ]
   },
   {
     "case_id": "bug-005-config",
@@ -54,9 +129,266 @@
     "repository_path": "benchmarks/bug_005_config",
     "bug_report": "Starting the service with PORT=abc silently listens on 8080. An invalid PORT should fail with a ConfigError so the misconfiguration is visible.",
     "expected_root_cause": "load_port wraps parsing in a broad except Exception that returns DEFAULT_PORT, which swallows the ValueError from int() and its own ConfigError for out-of-range ports. Only a missing PORT (KeyError) should fall back to the default.",
-    "root_cause_keywords": [["except", "exception"], ["swallow", "broad", "catch", "default", "keyerror"]],
-    "expected_files": ["config_loader.py", "test_config_loader.py"],
-    "expected_symbols": ["load_port"],
-    "required_evidence": ["source_code:config_loader.py", "execution:ConfigError"]
+    "root_cause_keywords": [
+      [
+        "except",
+        "exception"
+      ],
+      [
+        "swallow",
+        "broad",
+        "catch",
+        "default",
+        "keyerror"
+      ]
+    ],
+    "expected_files": [
+      "config_loader.py",
+      "test_config_loader.py"
+    ],
+    "expected_symbols": [
+      "load_port"
+    ],
+    "required_evidence": [
+      "source_code:config_loader.py",
+      "execution:ConfigError"
+    ]
+  },
+  {
+    "case_id": "bug-006-region-pricing",
+    "category": "multi_file",
+    "repository_id": "bench-bug-006-region-pricing",
+    "repository_path": "benchmarks/bug_006_region_pricing",
+    "bug_report": "Orders from California are charged differently depending on whether the region is typed 'CA' or 'ca': 'CA' gets no sales tax and 'ca' gets the $10 default shipping instead of $5.",
+    "expected_root_cause": "TAX_RATES has lower-case keys and SHIPPING upper-case keys, and both lookups are case-sensitive, so each lookup misses for one spelling of the region.",
+    "root_cause_keywords": [
+      [
+        "case"
+      ],
+      [
+        "tax"
+      ],
+      [
+        "shipping"
+      ]
+    ],
+    "expected_files": [
+      "tax.py",
+      "shipping.py",
+      "checkout.py",
+      "test_checkout.py"
+    ],
+    "expected_symbols": [
+      "tax_rate",
+      "shipping_cost"
+    ],
+    "required_evidence": [
+      "source_code:tax.py",
+      "source_code:shipping.py"
+    ]
+  },
+  {
+    "case_id": "bug-007-durations",
+    "category": "ambiguous_root_cause",
+    "repository_id": "bench-bug-007-durations",
+    "repository_path": "benchmarks/bug_007_durations",
+    "bug_report": "A cache TTL of '90s' keeps entries for 90 minutes instead of 90 seconds.",
+    "expected_root_cause": "UNITS in durations.py maps 's' to 60 instead of 1, so every seconds value, in the cache and in request timeouts, is read as minutes.",
+    "root_cause_keywords": [
+      [
+        "units",
+        "unit table",
+        "to_seconds",
+        "durations"
+      ],
+      [
+        "60"
+      ]
+    ],
+    "expected_files": [
+      "durations.py",
+      "cache.py",
+      "timeouts.py",
+      "test_cache.py",
+      "test_timeouts.py"
+    ],
+    "expected_symbols": [
+      "to_seconds"
+    ],
+    "required_evidence": [
+      "source_code:durations.py"
+    ]
+  },
+  {
+    "case_id": "bug-008-score-report",
+    "category": "interacting_bugs",
+    "repository_id": "bench-bug-008-score-report",
+    "repository_path": "benchmarks/bug_008_score_report",
+    "bug_report": "Summarising an empty score list crashes with 'not enough values to unpack'. An empty input should give count 0, mean 0.0 and no best player.",
+    "expected_root_cause": "parse_scores treats the empty string from ''.split(',') as an item and fails to unpack it; summarize then divides by zero and calls max() on an empty dict when there are no scores.",
+    "root_cause_keywords": [
+      [
+        "parse_scores",
+        "split"
+      ],
+      [
+        "summarize",
+        "zero",
+        "division",
+        "max("
+      ]
+    ],
+    "expected_files": [
+      "parsing.py",
+      "report.py",
+      "test_report.py"
+    ],
+    "expected_symbols": [
+      "parse_scores",
+      "summarize"
+    ],
+    "required_evidence": [
+      "source_code:parsing.py"
+    ]
+  },
+  {
+    "case_id": "bug-009-leap-year",
+    "category": "plausible_wrong_fix",
+    "repository_id": "bench-bug-009-leap-year",
+    "repository_path": "benchmarks/bug_009_leap_year",
+    "bug_report": "February 2000 shows 28 days, but 2000 was a leap year.",
+    "expected_root_cause": "is_leap_year returns year % 4 == 0 and year % 100 != 0, so years divisible by 400, such as 2000, are wrongly not leap years.",
+    "root_cause_keywords": [
+      [
+        "400"
+      ]
+    ],
+    "expected_files": [
+      "calendar_utils.py",
+      "test_calendar_utils.py"
+    ],
+    "expected_symbols": [
+      "is_leap_year"
+    ],
+    "required_evidence": [
+      "source_code:calendar_utils.py",
+      "execution:test_every_400th_year_is_leap"
+    ]
+  },
+  {
+    "case_id": "bug-010-slugify",
+    "category": "plausible_wrong_fix",
+    "repository_id": "bench-bug-010-slugify",
+    "repository_path": "benchmarks/bug_010_slugify",
+    "bug_report": "Slugs drop accented letters: 'Café au lait' becomes 'caf-au-lait' instead of 'cafe-au-lait'.",
+    "expected_root_cause": "slugify matches [a-z0-9]+ on the raw lower-cased title, which drops accented letters instead of transliterating them to ASCII.",
+    "root_cause_keywords": [
+      [
+        "[a-z0-9]",
+        "findall",
+        "regex",
+        "regular expression",
+        "pattern"
+      ],
+      [
+        "ascii",
+        "translit",
+        "normaliz",
+        "unicodedata",
+        "non-ascii"
+      ]
+    ],
+    "expected_files": [
+      "slugs.py",
+      "test_slugs.py"
+    ],
+    "expected_symbols": [
+      "slugify"
+    ],
+    "required_evidence": [
+      "source_code:slugs.py"
+    ]
+  },
+  {
+    "case_id": "bug-011-split-bill",
+    "category": "repair_retry",
+    "repository_id": "bench-bug-011-split-bill",
+    "repository_path": "benchmarks/bug_011_split_bill",
+    "bug_report": "Splitting a $100.00 bill between 3 people charges $33.33 each, so the shares add up to $99.99 and a cent goes missing.",
+    "expected_root_cause": "split_bill computes round(total_cents / people) once and returns that share for everyone, so whenever the total does not divide evenly the shares do not add up to the total.",
+    "root_cause_keywords": [
+      [
+        "round"
+      ],
+      [
+        "repeat",
+        "same share",
+        "every",
+        "everyone",
+        "leftover",
+        "remainder"
+      ]
+    ],
+    "expected_files": [
+      "billing.py",
+      "test_billing.py"
+    ],
+    "expected_symbols": [
+      "split_bill"
+    ],
+    "required_evidence": [
+      "source_code:billing.py"
+    ]
+  },
+  {
+    "case_id": "bug-012-versions",
+    "category": "repair_retry",
+    "repository_id": "bench-bug-012-versions",
+    "repository_path": "benchmarks/bug_012_versions",
+    "bug_report": "The updater says version 1.10.0 is not newer than 1.9.0, so users on 1.9.0 are never offered the update.",
+    "expected_root_cause": "is_newer returns candidate > current on the raw strings, so '1.10.0' sorts before '1.9.0' because '1' < '9' character by character.",
+    "root_cause_keywords": [
+      [
+        "string",
+        "lexicograph",
+        "character"
+      ]
+    ],
+    "expected_files": [
+      "versions.py",
+      "test_versions.py"
+    ],
+    "expected_symbols": [
+      "is_newer"
+    ],
+    "required_evidence": [
+      "source_code:versions.py"
+    ]
+  },
+  {
+    "case_id": "bug-013-unique-emails",
+    "category": "repair_retry",
+    "repository_id": "bench-bug-013-unique-emails",
+    "repository_path": "benchmarks/bug_013_unique_emails",
+    "bug_report": "The contact list shows Ada@x.com and ada@X.com as two different people. Addresses that differ only in case should appear once.",
+    "expected_root_cause": "unique_emails uses dict.fromkeys(emails), which compares addresses case-sensitively, so case variants of the same address are kept as separate entries.",
+    "root_cause_keywords": [
+      [
+        "fromkeys",
+        "exact",
+        "case-sensitive",
+        "case sensitive"
+      ]
+    ],
+    "expected_files": [
+      "contacts.py",
+      "test_contacts.py"
+    ],
+    "expected_symbols": [
+      "unique_emails"
+    ],
+    "required_evidence": [
+      "source_code:contacts.py"
+    ]
   }
 ]

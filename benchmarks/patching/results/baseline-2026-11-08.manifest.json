@@ -1,0 +1,418 @@
+{
+  "name": "baseline-2026-11-08",
+  "purpose": "Evaluation state before the genuine-repair-retry milestone. Later results are compared against this.",
+  "git_head": "322e591a93127390face0ee30dfb423a39bd70c4",
+  "working_tree": "uncommitted changes on top of git_head (Tasks 13 A/B/C, harder benchmark)",
+  "tests": "928 passed with REQUIRE_CONTAINER=1",
+  "result_files": {
+    "2026-11-08-live-agent-opus-5-5.json": {
+      "sha256": "efd602733f99e2cae07451919fb3d7c8c7f11f3fad5a9933d2ae3cee122e7da0",
+      "summary": {
+        "cases": 10,
+        "diagnosis_accuracy": 1.0,
+        "patch_generation_rate": 1.0,
+        "patch_validation_rate": 1.0,
+        "patch_application_rate": 1.0,
+        "bug_fix_rate": 1.0,
+        "regression_free_rate": 1.0,
+        "verified_patch_rate": 1.0,
+        "first_attempt_verified_rate": 1.0,
+        "holdout_pass_rate": 1.0,
+        "holdout_cases": 7,
+        "exploratory_pass_rate": 0.0,
+        "success_rate": 1.0,
+        "regression_rate": 0.0,
+        "mean_attempts": 1.0,
+        "cases_with_retries": 0,
+        "retry_success_rate": null,
+        "mean_cost_usd": 0.139873,
+        "total_cost_usd": 1.398731,
+        "mean_latency_seconds": 35.608,
+        "expectation_match_rate": null,
+        "by_category": {
+          "ambiguous_root_cause": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "interacting_bugs": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "multi_file": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "plausible_wrong_fix": {
+            "cases": 2,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "single_file": {
+            "cases": 5,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          }
+        }
+      }
+    },
+    "2026-11-08-live-opus-5-5.json": {
+      "sha256": "02a9e041071fb22a1e84836db681f36cc2656d6fa937c9d7907c274799b533ae",
+      "summary": {
+        "cases": 5,
+        "patch_generation_rate": 1.0,
+        "patch_validation_rate": 1.0,
+        "patch_application_rate": 1.0,
+        "bug_fix_rate": 1.0,
+        "regression_free_rate": 1.0,
+        "verified_patch_rate": 1.0,
+        "success_rate": 1.0,
+        "mean_attempts": 1.0,
+        "mean_cost_usd": 0.024372,
+        "total_cost_usd": 0.12186,
+        "mean_latency_seconds": 6.679,
+        "expectation_match_rate": null
+      }
+    },
+    "2026-11-08-live-recorded-opus-5-5.json": {
+      "sha256": "117aaf7b25a63b874a81948864d587d4590aa51b0deb37806866bb1205fb43a7",
+      "summary": {
+        "cases": 10,
+        "diagnosis_accuracy": null,
+        "patch_generation_rate": 1.0,
+        "patch_validation_rate": 1.0,
+        "patch_application_rate": 1.0,
+        "bug_fix_rate": 1.0,
+        "regression_free_rate": 1.0,
+        "verified_patch_rate": 1.0,
+        "first_attempt_verified_rate": 1.0,
+        "holdout_pass_rate": 1.0,
+        "holdout_cases": 7,
+        "exploratory_pass_rate": 1.0,
+        "success_rate": 1.0,
+        "regression_rate": 0.0,
+        "mean_attempts": 1.0,
+        "cases_with_retries": 0,
+        "retry_success_rate": null,
+        "mean_cost_usd": 0.025343,
+        "total_cost_usd": 0.253425,
+        "mean_latency_seconds": 6.938,
+        "expectation_match_rate": null,
+        "by_category": {
+          "ambiguous_root_cause": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "interacting_bugs": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "multi_file": {
+            "cases": 1,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "plausible_wrong_fix": {
+            "cases": 2,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          },
+          "single_file": {
+            "cases": 5,
+            "verified_rate": 1,
+            "success_rate": 1,
+            "mean_attempts": 1
+          }
+        }
+      }
+    }
+  },
+  "reference_mode": {
+    "command": "uv run python benchmarks/patching/evaluate.py",
+    "summary": {
+      "cases": 30,
+      "diagnosis_accuracy": null,
+      "patch_generation_rate": 1.0,
+      "patch_validation_rate": 0.9,
+      "patch_application_rate": 0.9,
+      "bug_fix_rate": 0.5667,
+      "regression_free_rate": 0.6333,
+      "verified_patch_rate": 0.4333,
+      "first_attempt_verified_rate": 0.4,
+      "holdout_pass_rate": 0.4,
+      "holdout_cases": 20,
+      "exploratory_pass_rate": 1.0,
+      "success_rate": 0.3667,
+      "regression_rate": 0.2143,
+      "mean_attempts": 1.03,
+      "cases_with_retries": 1,
+      "retry_success_rate": 1.0,
+      "mean_cost_usd": null,
+      "total_cost_usd": null,
+      "mean_latency_seconds": 0.763,
+      "expectation_match_rate": 1.0,
+      "by_category": {
+        "ambiguous_root_cause": {
+          "cases": 2,
+          "verified_rate": 0.5,
+          "success_rate": 0.5,
+          "mean_attempts": 1
+        },
+        "interacting_bugs": {
+          "cases": 3,
+          "verified_rate": 0.6667,
+          "success_rate": 0.6667,
+          "mean_attempts": 1.33
+        },
+        "multi_file": {
+          "cases": 3,
+          "verified_rate": 0.3333,
+          "success_rate": 0.3333,
+          "mean_attempts": 1
+        },
+        "plausible_wrong_fix": {
+          "cases": 6,
+          "verified_rate": 0.6667,
+          "success_rate": 0.3333,
+          "mean_attempts": 1
+        },
+        "single_file": {
+          "cases": 16,
+          "verified_rate": 0.3125,
+          "success_rate": 0.3125,
+          "mean_attempts": 1
+        }
+      }
+    },
+    "verdicts": {
+      "bug-001-average:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-001-average:no_fix": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-001-average:regression": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-001-average:syntax_error": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-001-average:test_tamper": [
+        "validation_failed",
+        [
+          "validation_failed"
+        ],
+        null
+      ],
+      "bug-002-missing-record:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        null
+      ],
+      "bug-002-missing-record:regression": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        null
+      ],
+      "bug-003-pagination:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-003-pagination:no_fix": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-003-pagination:test_tamper": [
+        "validation_failed",
+        [
+          "validation_failed"
+        ],
+        null
+      ],
+      "bug-004-discount:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        null
+      ],
+      "bug-004-discount:no_fix": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        null
+      ],
+      "bug-004-discount:syntax_error": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        null
+      ],
+      "bug-005-config:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        null
+      ],
+      "bug-005-config:regression": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        null
+      ],
+      "bug-005-config:out_of_scope": [
+        "validation_failed",
+        [
+          "validation_failed"
+        ],
+        null
+      ],
+      "bug-006-region-pricing:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-006-region-pricing:checkout_only": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-006-region-pricing:wrong_case": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-007-durations:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-007-durations:wrong_location": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-008-score-report:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-008-score-report:parse_only": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-008-score-report:retry": [
+        "verified",
+        [
+          "rejected",
+          "verified"
+        ],
+        true
+      ],
+      "bug-009-leap-year:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-009-leap-year:every_fourth_year": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-009-leap-year:special_case_2000": [
+        "verified",
+        [
+          "verified"
+        ],
+        false
+      ],
+      "bug-010-slugify:correct": [
+        "verified",
+        [
+          "verified"
+        ],
+        true
+      ],
+      "bug-010-slugify:word_regex": [
+        "rejected",
+        [
+          "rejected"
+        ],
+        false
+      ],
+      "bug-010-slugify:overfit": [
+        "verified",
+        [
+          "verified"
+        ],
+        false
+      ]
+    }
+  },
+  "benchmark_inputs": {
+    "benchmarks/patching/cases.json": "9f81e762de2388a1cdf66c6e45c5668b6f3457df565421278e095a114519265e",
+    "benchmarks/patching/diagnoses.json": "37199e4cba48c4fd4fff597a87d9141d8f2d6ca6c6c2441c148f06ca074d995a"
+  }
+}

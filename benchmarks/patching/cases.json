@@ -4,20 +4,49 @@
     "repository_id": "bench-bug-001-average",
     "investigation_case": "bug-001-average",
     "repository_path": "benchmarks/bug_001_average",
-    "expected_files": ["solution.py"],
+    "expected_files": [
+      "solution.py"
+    ],
     "expected_behaviour": "An empty input list returns 0.0; other averages are unchanged.",
-    "required_tests": ["test_average_of_empty_list"],
+    "required_tests": [
+      "test_average_of_empty_list"
+    ],
     "reference_patches": [
-      {"name": "correct", "file": "reference/bug-001-average/correct.diff", "expected_status": "verified",
-       "description": "Return 0.0 for an empty list."},
-      {"name": "no_fix", "file": "reference/bug-001-average/no_fix.diff", "expected_status": "rejected",
-       "description": "Changes the divisor but still divides by zero."},
-      {"name": "regression", "file": "reference/bug-001-average/regression.diff", "expected_status": "rejected",
-       "description": "Empty list works, every other average is wrong."},
-      {"name": "syntax_error", "file": "reference/bug-001-average/syntax_error.diff", "expected_status": "rejected",
-       "description": "The fix with a missing colon."},
-      {"name": "test_tamper", "file": "reference/bug-001-average/test_tamper.diff", "expected_status": "validation_failed",
-       "description": "Weakens the failing test instead of fixing the code."}
+      {
+        "name": "correct",
+        "file": "reference/bug-001-average/correct.diff",
+        "expected_status": "verified",
+        "description": "Return 0.0 for an empty list."
+      },
+      {
+        "name": "no_fix",
+        "file": "reference/bug-001-average/no_fix.diff",
+        "expected_status": "rejected",
+        "description": "Changes the divisor but still divides by zero."
+      },
+      {
+        "name": "regression",
+        "file": "reference/bug-001-average/regression.diff",
+        "expected_status": "rejected",
+        "description": "Empty list works, every other average is wrong."
+      },
+      {
+        "name": "syntax_error",
+        "file": "reference/bug-001-average/syntax_error.diff",
+        "expected_status": "rejected",
+        "description": "The fix with a missing colon."
+      },
+      {
+        "name": "test_tamper",
+        "file": "reference/bug-001-average/test_tamper.diff",
+        "expected_status": "validation_failed",
+        "description": "Weakens the failing test instead of fixing the code."
+      }
+    ],
+    "category": "single_file",
+    "difficulty": "baseline",
+    "holdout_tests": [
+      "holdout/bug-001-average/test_holdout_average.py"
     ]
   },
   {
@@ -25,31 +54,67 @@
     "repository_id": "bench-bug-002-missing-record",
     "investigation_case": "bug-002-missing-record",
     "repository_path": "benchmarks/bug_002_missing_record",
-    "expected_files": ["users_api/routes.py", "users_api/service.py"],
+    "expected_files": [
+      "users_api/routes.py",
+      "users_api/service.py"
+    ],
     "expected_behaviour": "A missing user returns (404, body); an existing user still returns (200, profile).",
-    "required_tests": ["test_missing_user_returns_404"],
+    "required_tests": [
+      "test_missing_user_returns_404"
+    ],
     "reference_patches": [
-      {"name": "correct", "file": "reference/bug-002-missing-record/correct.diff", "expected_status": "verified",
-       "description": "Return 404 when the service finds no user."},
-      {"name": "regression", "file": "reference/bug-002-missing-record/regression.diff", "expected_status": "rejected",
-       "description": "Returns 404 for every user."}
-    ]
+      {
+        "name": "correct",
+        "file": "reference/bug-002-missing-record/correct.diff",
+        "expected_status": "verified",
+        "description": "Return 404 when the service finds no user."
+      },
+      {
+        "name": "regression",
+        "file": "reference/bug-002-missing-record/regression.diff",
+        "expected_status": "rejected",
+        "description": "Returns 404 for every user."
+      }
+    ],
+    "category": "single_file",
+    "difficulty": "baseline"
   },
   {
     "case_id": "bug-003-pagination",
     "repository_id": "bench-bug-003-pagination",
     "investigation_case": "bug-003-pagination",
     "repository_path": "benchmarks/bug_003_pagination",
-    "expected_files": ["pagination.py"],
+    "expected_files": [
+      "pagination.py"
+    ],
     "expected_behaviour": "total_pages rounds up, so a partial last page is returned; pages beyond the end stay empty.",
-    "required_tests": ["test_partial_last_page"],
+    "required_tests": [
+      "test_partial_last_page"
+    ],
     "reference_patches": [
-      {"name": "correct", "file": "reference/bug-003-pagination/correct.diff", "expected_status": "verified",
-       "description": "Ceiling division."},
-      {"name": "no_fix", "file": "reference/bug-003-pagination/no_fix.diff", "expected_status": "rejected",
-       "description": "int(a / b) still rounds down."},
-      {"name": "test_tamper", "file": "reference/bug-003-pagination/test_tamper.diff", "expected_status": "validation_failed",
-       "description": "Changes the test's expectation to the buggy output."}
+      {
+        "name": "correct",
+        "file": "reference/bug-003-pagination/correct.diff",
+        "expected_status": "verified",
+        "description": "Ceiling division."
+      },
+      {
+        "name": "no_fix",
+        "file": "reference/bug-003-pagination/no_fix.diff",
+        "expected_status": "rejected",
+        "description": "int(a / b) still rounds down."
+      },
+      {
+        "name": "test_tamper",
+        "file": "reference/bug-003-pagination/test_tamper.diff",
+        "expected_status": "validation_failed",
+        "description": "Changes the test's expectation to the buggy output."
+      }
+    ],
+    "category": "single_file",
+    "difficulty": "baseline",
+    "holdout_tests": [
+      "holdout/bug-003-pagination/test_holdout_pagination.py"
     ]
   },
   {
@@ -57,33 +122,418 @@
     "repository_id": "bench-bug-004-discount",
     "investigation_case": "bug-004-discount",
     "repository_path": "benchmarks/bug_004_discount",
-    "expected_files": ["pricing.py"],
+    "expected_files": [
+      "pricing.py"
+    ],
     "expected_behaviour": "apply_discount returns the discounted price; invalid percentages still raise ValueError.",
-    "required_tests": ["test_ten_percent_discount", "test_order_total_with_discount"],
+    "required_tests": [
+      "test_ten_percent_discount",
+      "test_order_total_with_discount"
+    ],
     "reference_patches": [
-      {"name": "correct", "file": "reference/bug-004-discount/correct.diff", "expected_status": "verified",
-       "description": "Return the discounted value."},
-      {"name": "no_fix", "file": "reference/bug-004-discount/no_fix.diff", "expected_status": "rejected",
-       "description": "Uses the variable but still returns the original price."},
-      {"name": "syntax_error", "file": "reference/bug-004-discount/syntax_error.diff", "expected_status": "rejected",
-       "description": "An unbalanced parenthesis."}
-    ]
+      {
+        "name": "correct",
+        "file": "reference/bug-004-discount/correct.diff",
+        "expected_status": "verified",
+        "description": "Return the discounted value."
+      },
+      {
+        "name": "no_fix",
+        "file": "reference/bug-004-discount/no_fix.diff",
+        "expected_status": "rejected",
+        "description": "Uses the variable but still returns the original price."
+      },
+      {
+        "name": "syntax_error",
+        "file": "reference/bug-004-discount/syntax_error.diff",
+        "expected_status": "rejected",
+        "description": "An unbalanced parenthesis."
+      }
+    ],
+    "category": "single_file",
+    "difficulty": "baseline"
   },
   {
     "case_id": "bug-005-config",
     "repository_id": "bench-bug-005-config",
     "investigation_case": "bug-005-config",
     "repository_path": "benchmarks/bug_005_config",
-    "expected_files": ["config_loader.py"],
+    "expected_files": [
+      "config_loader.py"
+    ],
     "expected_behaviour": "A missing PORT uses the default; a non-numeric or out-of-range PORT raises ConfigError.",
-    "required_tests": ["test_non_numeric_port_is_an_error", "test_out_of_range_port_is_an_error"],
+    "required_tests": [
+      "test_non_numeric_port_is_an_error",
+      "test_out_of_range_port_is_an_error"
+    ],
     "reference_patches": [
-      {"name": "correct", "file": "reference/bug-005-config/correct.diff", "expected_status": "verified",
-       "description": "Only a missing PORT falls back to the default."},
-      {"name": "regression", "file": "reference/bug-005-config/regression.diff", "expected_status": "rejected",
-       "description": "Invalid values raise, but a missing PORT now crashes."},
-      {"name": "out_of_scope", "file": "reference/bug-005-config/out_of_scope.diff", "expected_status": "validation_failed",
-       "description": "Also writes a .env file."}
+      {
+        "name": "correct",
+        "file": "reference/bug-005-config/correct.diff",
+        "expected_status": "verified",
+        "description": "Only a missing PORT falls back to the default."
+      },
+      {
+        "name": "regression",
+        "file": "reference/bug-005-config/regression.diff",
+        "expected_status": "rejected",
+        "description": "Invalid values raise, but a missing PORT now crashes."
+      },
+      {
+        "name": "out_of_scope",
+        "file": "reference/bug-005-config/out_of_scope.diff",
+        "expected_status": "validation_failed",
+        "description": "Also writes a .env file."
+      }
+    ],
+    "category": "single_file",
+    "difficulty": "baseline"
+  },
+  {
+    "case_id": "bug-006-region-pricing",
+    "category": "multi_file",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-006-region-pricing",
+    "investigation_case": "bug-006-region-pricing",
+    "repository_path": "benchmarks/bug_006_region_pricing",
+    "expected_files": [
+      "tax.py",
+      "shipping.py"
+    ],
+    "expected_behaviour": "tax_rate and shipping_cost accept a region code in any case; order totals no longer depend on case.",
+    "required_tests": [
+      "test_tax_rate_uppercase",
+      "test_shipping_lowercase",
+      "test_order_total_ignores_region_case"
+    ],
+    "holdout_tests": [
+      "holdout/bug-006-region-pricing/test_holdout_checkout.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Normalise the region in both lookups.",
+        "file": "reference/bug-006-region-pricing/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "checkout_only",
+        "expected_status": "rejected",
+        "description": "Plausible: normalise only in checkout; the lookups stay case-sensitive.",
+        "file": "reference/bug-006-region-pricing/checkout_only.diff"
+      },
+      {
+        "name": "wrong_case",
+        "expected_status": "rejected",
+        "description": "Upper-cases the tax lookup, whose keys are lower case: breaks a passing test.",
+        "file": "reference/bug-006-region-pricing/wrong_case.diff"
+      }
+    ]
+  },
+  {
+    "case_id": "bug-007-durations",
+    "category": "ambiguous_root_cause",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-007-durations",
+    "investigation_case": "bug-007-durations",
+    "repository_path": "benchmarks/bug_007_durations",
+    "expected_files": [
+      "durations.py"
+    ],
+    "expected_behaviour": "'Ns' durations mean N seconds everywhere: cache TTLs and request timeouts.",
+    "required_tests": [
+      "test_seconds_ttl",
+      "test_entry_expires_after_ttl",
+      "test_default_timeout"
+    ],
+    "holdout_tests": [
+      "holdout/bug-007-durations/test_holdout_durations.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Fix the shared unit table.",
+        "file": "reference/bug-007-durations/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "wrong_location",
+        "expected_status": "rejected",
+        "description": "Plausible: special-case seconds in the cache, where the bug was reported; timeouts stay wrong.",
+        "file": "reference/bug-007-durations/wrong_location.diff"
+      }
+    ]
+  },
+  {
+    "case_id": "bug-008-score-report",
+    "category": "interacting_bugs",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-008-score-report",
+    "investigation_case": "bug-008-score-report",
+    "repository_path": "benchmarks/bug_008_score_report",
+    "expected_files": [
+      "parsing.py",
+      "report.py"
+    ],
+    "expected_behaviour": "Blank input parses to no scores and summarises to count 0, mean 0.0, best None.",
+    "required_tests": [
+      "test_parse_blank",
+      "test_summary_of_blank_input"
+    ],
+    "holdout_tests": [
+      "holdout/bug-008-score-report/test_holdout_report.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Skip blank items and handle an empty summary.",
+        "file": "reference/bug-008-score-report/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "parse_only",
+        "expected_status": "rejected",
+        "description": "Fixes parsing, which exposes the division by zero in summarize.",
+        "file": "reference/bug-008-score-report/parse_only.diff"
+      },
+      {
+        "name": "retry",
+        "expected_status": "verified",
+        "description": "Attempt 1 fixes only parsing and is rejected; attempt 2 fixes both.",
+        "files": [
+          "reference/bug-008-score-report/parse_only.diff",
+          "reference/bug-008-score-report/correct.diff"
+        ],
+        "expected_holdout": true,
+        "expected_attempts": 2
+      }
+    ],
+    "exploratory_tests": [
+      "exploratory/bug-008-score-report/test_exploratory_report.py"
+    ]
+  },
+  {
+    "case_id": "bug-009-leap-year",
+    "category": "plausible_wrong_fix",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-009-leap-year",
+    "investigation_case": "bug-009-leap-year",
+    "repository_path": "benchmarks/bug_009_leap_year",
+    "expected_files": [
+      "calendar_utils.py"
+    ],
+    "expected_behaviour": "Full Gregorian rules: years divisible by 400 are leap years; other centuries are not.",
+    "required_tests": [
+      "test_every_400th_year_is_leap",
+      "test_february_2000"
+    ],
+    "holdout_tests": [
+      "holdout/bug-009-leap-year/test_holdout_calendar.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Add the 400-year rule.",
+        "file": "reference/bug-009-leap-year/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "every_fourth_year",
+        "expected_status": "rejected",
+        "description": "Plausible: drop the century rule; 1900 becomes a leap year.",
+        "file": "reference/bug-009-leap-year/every_fourth_year.diff"
+      },
+      {
+        "name": "special_case_2000",
+        "expected_status": "verified",
+        "description": "Overfit: special-cases 2000. Passes every repository test; held-out tests catch it.",
+        "file": "reference/bug-009-leap-year/special_case_2000.diff",
+        "expected_holdout": false
+      }
+    ]
+  },
+  {
+    "case_id": "bug-010-slugify",
+    "category": "plausible_wrong_fix",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-010-slugify",
+    "investigation_case": "bug-010-slugify",
+    "repository_path": "benchmarks/bug_010_slugify",
+    "expected_files": [
+      "slugs.py"
+    ],
+    "expected_behaviour": "Accented letters become their ASCII base letters; slugs stay ASCII and other rules are unchanged.",
+    "required_tests": [
+      "test_accented_letters_are_kept_as_ascii"
+    ],
+    "holdout_tests": [
+      "holdout/bug-010-slugify/test_holdout_slugs.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Transliterate with unicodedata before matching.",
+        "file": "reference/bug-010-slugify/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "word_regex",
+        "expected_status": "rejected",
+        "description": "Plausible: match \\w+; keeps é and underscores, breaking passing tests.",
+        "file": "reference/bug-010-slugify/word_regex.diff"
+      },
+      {
+        "name": "overfit",
+        "expected_status": "verified",
+        "description": "Overfit: replaces only é. Passes every repository test; held-out tests catch it.",
+        "file": "reference/bug-010-slugify/overfit.diff",
+        "expected_holdout": false
+      }
+    ]
+  },
+  {
+    "case_id": "bug-011-split-bill",
+    "category": "repair_retry",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-011-split-bill",
+    "investigation_case": "bug-011-split-bill",
+    "repository_path": "benchmarks/bug_011_split_bill",
+    "expected_files": [
+      "billing.py"
+    ],
+    "expected_behaviour": "Shares add up to the total; leftover cents go to the first people.",
+    "required_tests": [
+      "test_shares_add_up_to_the_total",
+      "test_leftover_cents_go_to_the_first_people"
+    ],
+    "holdout_tests": [
+      "holdout/bug-011-split-bill/test_holdout_billing.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Integer division with divmod; leftover to the first people.",
+        "file": "reference/bug-011-split-bill/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "plausible_first",
+        "expected_status": "rejected",
+        "description": "Plausible: the remainder goes to the last person. The test that defines who gets it fails.",
+        "file": "reference/bug-011-split-bill/plausible_first.diff"
+      },
+      {
+        "name": "retry",
+        "expected_status": "verified",
+        "description": "Attempt 1 is the plausible fix and is rejected; attempt 2 is correct.",
+        "files": [
+          "reference/bug-011-split-bill/plausible_first.diff",
+          "reference/bug-011-split-bill/correct.diff"
+        ],
+        "expected_holdout": true,
+        "expected_attempts": 2
+      }
+    ]
+  },
+  {
+    "case_id": "bug-012-versions",
+    "category": "repair_retry",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-012-versions",
+    "investigation_case": "bug-012-versions",
+    "repository_path": "benchmarks/bug_012_versions",
+    "expected_files": [
+      "versions.py"
+    ],
+    "expected_behaviour": "Numeric version comparison that still orders release candidates.",
+    "required_tests": [
+      "test_double_digit_minor_version",
+      "test_update_available"
+    ],
+    "holdout_tests": [
+      "holdout/bug-012-versions/test_holdout_versions.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Parse versions into numeric keys, with a release-candidate component.",
+        "file": "reference/bug-012-versions/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "plausible_first",
+        "expected_status": "rejected",
+        "description": "Plausible: compare integer tuples. Crashes on '-rc' versions, which a passing test uses.",
+        "file": "reference/bug-012-versions/plausible_first.diff"
+      },
+      {
+        "name": "retry",
+        "expected_status": "verified",
+        "description": "Attempt 1 is the plausible fix and is rejected; attempt 2 is correct.",
+        "files": [
+          "reference/bug-012-versions/plausible_first.diff",
+          "reference/bug-012-versions/correct.diff"
+        ],
+        "expected_holdout": true,
+        "expected_attempts": 2
+      }
+    ],
+    "exploratory_tests": [
+      "exploratory/bug-012-versions/test_exploratory_versions.py"
+    ]
+  },
+  {
+    "case_id": "bug-013-unique-emails",
+    "category": "repair_retry",
+    "difficulty": "hard",
+    "repository_id": "bench-bug-013-unique-emails",
+    "investigation_case": "bug-013-unique-emails",
+    "repository_path": "benchmarks/bug_013_unique_emails",
+    "expected_files": [
+      "contacts.py"
+    ],
+    "expected_behaviour": "Case-insensitive de-duplication that keeps the first spelling and first-seen order.",
+    "required_tests": [
+      "test_case_variants_are_duplicates"
+    ],
+    "holdout_tests": [
+      "holdout/bug-013-unique-emails/test_holdout_contacts.py"
+    ],
+    "reference_patches": [
+      {
+        "name": "correct",
+        "expected_status": "verified",
+        "description": "Key by the lower-cased address; keep the first spelling.",
+        "file": "reference/bug-013-unique-emails/correct.diff",
+        "expected_holdout": true
+      },
+      {
+        "name": "plausible_first",
+        "expected_status": "rejected",
+        "description": "Plausible: lower-case every address. Breaks the passing test that keeps the original spelling.",
+        "file": "reference/bug-013-unique-emails/plausible_first.diff"
+      },
+      {
+        "name": "retry",
+        "expected_status": "verified",
+        "description": "Attempt 1 is the plausible fix and is rejected; attempt 2 is correct.",
+        "files": [
+          "reference/bug-013-unique-emails/plausible_first.diff",
+          "reference/bug-013-unique-emails/correct.diff"
+        ],
+        "expected_holdout": true,
+        "expected_attempts": 2
+      }
+    ],
+    "exploratory_tests": [
+      "exploratory/bug-013-unique-emails/test_exploratory_contacts.py"
     ]
   }
 ]
