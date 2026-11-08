@@ -77,7 +77,7 @@ LABEL org.opencontainers.image.title="atlas-ai-api"
 USER atlas
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
+    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"]
 # Exec form: uvicorn is PID 1 and receives SIGTERM. It stops accepting requests; the application then cancels active
 # evaluations and removes its worker containers (lifespan shutdown) within the graceful-shutdown window.
 # Behind the dashboard's reverse proxy the client address comes from X-Forwarded-For. uvicorn honours that header only
