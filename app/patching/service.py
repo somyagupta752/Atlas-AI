@@ -163,8 +163,11 @@ class PatchingService:
         llm_budget: LLMBudget | None = None,
         graph: Any = None,
         allow_untrusted_repositories: bool = False,
+        on_attempt: Callable[[PatchExecution, PatchAttempt], None] | None = None,
     ) -> None:
         self._llm = llm
+        # Called right after each attempt is recorded, so a caller can persist it immediately.
+        self._on_attempt = on_attempt
         # Optional shared parent: every execution's budget must also fit in it (e.g. one benchmark run).
         self._shared_budget = llm_budget
         # Task 10 graph store (Neo4j), optional. Only ever suggests tests; see graph_tests.py.
@@ -314,6 +317,7 @@ class PatchingService:
                 if budget.remaining() < MIN_ATTEMPT_SECONDS:
                     stop_reason = "verification_budget_exhausted"
                     break
+                attempt_started = self._clock()
                 try:
                     attempt = self._attempt(
                         number, execution, analysis, context, history, scope, root, baseline_ws, baseline,
@@ -327,10 +331,13 @@ class PatchingService:
                         break
                     self._finish(execution, "failed", str(exc), f"llm_{exc.kind}", stop_reason="generation_failed")
                     return
+                attempt.duration_seconds = round(self._clock() - attempt_started, 3)
                 execution.attempts.append(attempt)
                 if attempt.proposal is not None:
                     execution.usage = execution.usage + attempt.proposal.usage
                     execution.model = attempt.proposal.model
+                if self._on_attempt is not None:
+                    self._on_attempt(execution, attempt)
                 if attempt.status in ("verified", "inconclusive", "failed"):
                     stop_reason = str(attempt.status)
                     break

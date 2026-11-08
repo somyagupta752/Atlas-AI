@@ -28,6 +28,9 @@ from app.dependencies import (
     get_embedding_provider_optional,
     get_graph_context_source,
 )
+from app.evaluation.baselines import router as baselines_router
+from app.evaluation.routes import install_error_handlers
+from app.evaluation.routes import router as evaluation_router
 from app.knowledge_graph.models import REPOSITORY_ID_PATTERN, CodeGraph
 from app.knowledge_graph.neo4j_client import (
     Neo4jConfig,
@@ -87,9 +90,27 @@ BENCHMARK_TIMEOUT_SECONDS = 10
 
 
 
+def _recover_evaluation_runs() -> None:
+    """Close evaluations a previous process left active. Never blocks startup."""
+    from datetime import UTC, datetime
+
+    from app.database import SessionLocal
+    from app.evaluation.routes import get_dispatcher
+    from app.evaluation.service import recover_interrupted_runs
+
+    try:
+        with SessionLocal() as session:
+            closed = recover_interrupted_runs(session, get_dispatcher().is_active, datetime.now(UTC))
+        if closed:
+            logger.warning("Closed %d interrupted evaluation run(s)", closed)
+    except Exception:
+        logger.exception("Could not recover interrupted evaluation runs")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Create the Neo4j driver and the embedding provider once per process."""
+    _recover_evaluation_runs()
     app.state.graph_repository = None
     settings = get_settings()
     app.state.embedding_provider = None
@@ -132,6 +153,9 @@ app = FastAPI(title="Atlas AI", lifespan=lifespan)
 app.middleware("http")(limit_debug_request_size)
 app.include_router(debugging_router)
 app.include_router(patching_router)
+app.include_router(baselines_router)
+app.include_router(evaluation_router)
+install_error_handlers(app)
 
 
 @app.exception_handler(GraphStoreError)

@@ -429,6 +429,9 @@ class PatchAttempt(BaseModel):
     # exact reasons. Lets the record prove a revision responded to real failure output.
     feedback_from: list[int] = Field(default_factory=list)
     feedback_reasons: list[str] = Field(default_factory=list)
+    # Wall-clock time of the whole attempt (model call, validation, application, verification).
+    # None in records written before this field existed: unknown, not zero.
+    duration_seconds: float | None = None
 
 
 class PatchExecution(BaseModel):

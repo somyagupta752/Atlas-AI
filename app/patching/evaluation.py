@@ -199,6 +199,12 @@ def _failure_reasons(attempt) -> list[str]:
     return [attempt.summary] if attempt.summary else []
 
 
+# Public names for the evaluation laboratory, which stores these outcomes per attempt.
+required_outcomes = _required_outcomes
+had_regression = _had_regression
+failure_reasons = _failure_reasons
+
+
 def repair_evidence(case: PatchingBenchmarkCase, execution: PatchExecution) -> dict[str, Any]:
     """What the record shows about a retry: the first failure, the feedback, and the final outcome."""
     if len(execution.attempts) < 2:
@@ -413,7 +419,7 @@ def benchmark_investigation(case: PatchingBenchmarkCase, entry: dict, investigat
 
 
 def run_case(case, root, llm, investigation, *, workspaces, limits, trusted_roots, max_attempts=None,
-             full_suite=True, llm_budget=None, engine=None) -> PatchExecution:
+             full_suite=True, llm_budget=None, engine=None, on_attempt=None) -> PatchExecution:
     """One generate-and-verify execution, in memory (no database)."""
     from app.agents.agent import StaticRepositoryResolver
     from app.patching.service import InMemoryInvestigationSource, PatchingService
@@ -427,6 +433,7 @@ def run_case(case, root, llm, investigation, *, workspaces, limits, trusted_root
         trusted_test_roots=trusted_roots,
         llm_budget=llm_budget,
         engine=engine,
+        on_attempt=on_attempt,
     )
     return service.generate_and_verify_patch(investigation.investigation_id, max_attempts=max_attempts,
                                              run_full_test_suite=full_suite)

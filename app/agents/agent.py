@@ -101,10 +101,13 @@ class SessionScopedRetrieval:
     retrieval must never share the session the service uses for events.
     """
 
-    def __init__(self, session_factory: Callable[[], Any], provider: Any = None, graph_source: Any = None) -> None:
+    def __init__(self, session_factory: Callable[[], Any], provider: Any = None, graph_source: Any = None,
+                 strategies: Any = None) -> None:
         self._session_factory = session_factory
         self._provider = provider
         self._graph_source = graph_source
+        # RetrievalSource members to use; None means all of them (hybrid).
+        self._strategies = strategies
 
     def retrieve_code(self, repository_id: str, query: str, limit: int) -> Any:
         from app.retrieval.graph_search import GraphSearcher
@@ -121,7 +124,9 @@ class SessionScopedRetrieval:
                 VectorSearcher(session, self._provider) if self._provider is not None else None,
                 GraphSearcher(self._graph_source, chunks) if self._graph_source is not None else None,
             )
-            return service.retrieve_code(repository_id, query, limit)
+            if self._strategies is None:
+                return service.retrieve_code(repository_id, query, limit)
+            return service.retrieve_code(repository_id, query, limit, strategies=self._strategies)
 
 
 class DebuggingAgent:

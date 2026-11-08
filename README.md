@@ -644,3 +644,104 @@ Verified rate 5/5. Every patch changed only the diagnosed file, and none touched
 - The Neo4j staleness check compares line ranges of the seeds and the discovered tests. An edit inside a function that keeps its line range is not detected. The edges from such an edit can be outdated.
 - Atlas can only verify against the tests a repository has. A patch that special-cases the reported input can be `verified`, as the two overfit references show. The held-out tests measure this in the benchmark, but real repositories have no held-out tests. A human still reviews every patch.
 - The live results below use recorded diagnoses on five small, single-bug repositories. They show that the pipeline works with a real model. They are not a measure of patch quality on real code.
+
+## Evaluation laboratory (Task 14)
+
+`app/evaluation/` turns the diagnosis and patch pipeline into a reproducible experiment platform. It calls the existing services (Task 12 agent, Task 13 patching, the global LLM budget, the local or container test backend). It has no agent loop of its own.
+
+```
+configuration -> run (cases, attempts, evidence) -> metrics (derived) -> comparison / baseline check
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `models.py` | Tables: configurations, runs, case results, attempts, metric calculations and snapshots, baselines. |
+| `configuration.py` | Validated, secret-free, versioned configurations. Prompt hashes are pinned. |
+| `runner.py` | Executes cases with the existing services. Saves each case and each attempt as it finishes. |
+| `service.py` | Validates a request, prevents duplicates, starts a background thread, recovers interrupted runs. |
+| `metrics.py` | Pure metric calculation from stored rows. No database, no HTTP. |
+| `comparisons.py`, `regression.py` | Run comparison and baseline regression detection. |
+| `importer.py` | Imports the historical JSON result files. |
+
+### Rules the data model enforces
+
+- `NULL` means not recorded or not applicable. A case whose diagnosis failed has `final_verified = NULL`, not `false`.
+- Money is `NUMERIC(12,6)`. `cost_kind` says `actual` (provider-reported tokens times the price table) or `estimated`. Unknown cost is `NULL`, never `0`. Reference runs make no model calls and record no cost.
+- Foreign keys never cascade. Database triggers reject changes to a configuration, to a finished run and its cases and attempts, and to metric snapshots and baselines. A change is a new row.
+- Recalculating metrics adds a new calculation version with a reason and an evidence hash. It never edits case or attempt rows. An equal hash proves the evidence did not change.
+- Reference mode scores several fixed patches per case, so a case row is unique per `(run, case_id, variant)`; live runs use the variant `live`.
+
+### Metrics
+
+Each metric is `numerator / denominator` over an explicit population. A field that is `NULL` is left out of that denominator. A zero denominator gives `null`, not 0%.
+
+| Metric | Numerator | Denominator |
+| --- | --- | --- |
+| `diagnosis_accuracy` | correct diagnoses | scored diagnoses |
+| `patch_validity_rate` | valid patches | attempts that produced a patch |
+| `patch_application_rate` | applied patches | valid patches |
+| `first_attempt_verified_rate` | cases verified on attempt 1 | cases with an attempted patch |
+| `final_verified_rate` | cases finally verified | cases with an attempted patch |
+| `heldout_pass_rate`, `exploratory_pass_rate` | passing cases | cases with those tests |
+| `regression_rate` | applied attempts that broke a passing test | applied attempts |
+| `retry_success_rate` | cases repaired after a failed first attempt | cases whose first attempt failed and were retried |
+| `success_rate` | verified, expected files only, held-out not failing | cases with an attempted patch |
+| `completion_rate` | cases whose pipeline completed | all selected cases |
+| `average_attempts`, `average_latency_seconds`, `average_cost_per_case` | sums | cases with that value |
+| `cost_per_successful_repair` | all recorded cost | successful cases |
+
+Cases that never ran (budget exhausted, cancelled, interrupted) stay in `completion_rate` and nowhere else. They are never failures and never successes. Breakdowns exist by category, model, retrieval strategy, test visibility, configuration and run.
+
+### API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST, GET | `/evaluations/configurations`, `/{id}`, `/{id}/clone` | Create, list, read, clone (a new version) |
+| GET | `/evaluations/benchmarks` | Selectable cases and the benchmark version |
+| POST | `/evaluations/run` | Validate and start a run in the background (202) |
+| GET | `/evaluations`, `/{id}`, `/{id}/cases`, `/{id}/cases/{case_id}`, `/{id}/metrics` | Records and metrics |
+| POST | `/evaluations/{id}/recalculate`, `/{id}/cancel` | New metric calculation; cancel an active run |
+| POST | `/evaluations/compare` | Compare 2-10 runs |
+| POST, GET | `/evaluations/baselines`, `/{id}`; POST `/evaluations/{id}/regression-check` | Baselines and threshold checks |
+
+A live run needs `benchmark_ids`, an explicit `max_cost_usd` no larger than the configuration's budget, and `confirm_paid: true`. One budget covers diagnosis, patch and repair calls; a call that might not fit is not made. Only one evaluation runs at a time (409 otherwise), and an `idempotency_key` makes a repeated request return the same run. Opening the dashboard or listing runs never calls a model.
+
+Run statuses: `completed` (every selected case has a finished record), `partial` (budget exhausted, interrupted, or cases left incomplete), `failed`, `cancelled`. A restart closes runs it interrupted as `partial` or `failed`.
+
+### Configurations
+
+A configuration fixes the model (`provider`, `model_id`, `effort`, `max_tokens`), retrieval (`strategy`: `hybrid`, `keyword`, `vector`, `graph`, `none`; `graph_enabled`; `embedding_model`), agent limits and tools, patch attempts, the test backend (`local` or `container`, required) and visibility (`blind` shows the model no test files), and the budget. Unknown fields are rejected, so no API key can be stored. Strings are also scanned for key-shaped values and for the live secrets. The server adds hashes of the diagnosis prompt, the patch prompt and the tool schemas. A live run refuses a configuration whose prompts changed since it was created: clone it.
+
+`graph_enabled=false` removes graph retrieval from the agent and disables graph test discovery in patching. Retrieval settings affect a run only when the agent diagnoses (`diagnosis_mode: agent`); with recorded diagnoses they are recorded but unused, and the run's `environment.retrieval_applied` says so.
+
+### Comparison and regressions
+
+Comparisons show raw counts, absolute and relative differences and sample sizes. Under 30 cases, every difference carries a warning. Atlas never reports statistical significance. Only cases present in every run are compared case by case; a missing case is listed as missing. Different benchmark versions are flagged.
+
+A baseline copies a completed run's configuration and metrics into a new row and leaves the run untouched. A regression check refuses a different benchmark version and uses only shared cases. Thresholds are request values with defaults in `RegressionThresholds`: final verified rate drop 10 points, held-out drop 10 points, regression rate rise 5 points, category verified drop 20 points, cost per repair rise 25%, latency rise 25%. Each finding names the metric, both counts, the threshold and the supporting case IDs.
+
+### Historical results
+
+```bash
+uv run python -m app.evaluation.importer                       # every result file in benchmarks/patching/results
+uv run python -m app.evaluation.importer 2026-11-08-live-opus-5-5.json
+```
+
+Files are only read. The file name and SHA-256 are stored, and importing the same bytes again does nothing. Fields a file never recorded stay `NULL` (the oldest file has no categories, held-out results or diagnosis scores). Imported runs are marked historical, use `benchmark_version = unknown-historical` (so a current baseline refuses them), and are checked against the file's own summary: case count, verified and success rates, total cost. A mismatch aborts the import.
+
+### Dashboard
+
+```bash
+cd frontend && npm install && npm run dev      # http://localhost:5173, proxies /evaluations to ATLAS_API (default :8000)
+npm test                                        # formatting helpers
+```
+
+Pages: overview, start evaluation (reference or live, explicit budget, confirmation), evaluation detail (polls while a run is active, metrics with denominators, per-case table, regression check), comparison (side by side, best value highlighted, category and case breakdown), and case investigation (diagnosis, evidence, every patch attempt with its diff, feedback and checks, held-out results). Every value comes from the API; unknown shows as `n/a`.
+
+### Limits of this milestone
+
+- Exact LLM output is not reproducible. A run records the conditions (configuration snapshot, prompt hashes, benchmark version, commit, backend and image ID) and keeps every output.
+- Execution is one background thread in one process. There is no queue and no second worker.
+- The benchmark has 13 small constructed bugs. Differences between configurations on this sample are observations, not evidence that one model is better.
+- Agent diagnoses are stored as `investigations` rows and linked from the case. Recorded diagnoses have no row.
+- Terminal runs cannot be deleted by design, so tests use only the rollback-wrapped session and never commit evaluation rows.

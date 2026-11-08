@@ -259,3 +259,7 @@ class PatchVerificationRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# Registers the evaluation tables on Base.metadata (Alembic and the schema-match test read it).
+from app.evaluation import models as _evaluation_models  # noqa: F401
