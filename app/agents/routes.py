@@ -29,6 +29,8 @@ from app.agents.llm import LLMProvider
 from app.agents.repository import InvestigationNotFoundError, InvestigationRepository
 from app.agents.schemas import AgentLimits, InvestigateRequest, RootCauseAnalysis
 from app.agents.tool_registry import ToolRegistry, create_default_registry
+from app.auth.access import authorize_repository, current_user, investigation_access
+from app.auth.models import Role, User
 from app.config import get_settings
 from app.database import SessionLocal, get_db
 from app.dependencies import (
@@ -153,9 +155,17 @@ def get_investigation_repository(db: Session = Depends(get_db)) -> Investigation
 # --- endpoints ------------------------------------------------------------------------
 
 
+def investigate_access(body: InvestigateRequest, user: User = Depends(current_user),
+                       db: Session = Depends(get_db)) -> None:
+    """Authenticate, then authorize against the repository named in the body, before any model is touched."""
+    authorize_repository(db, user, body.repository_id, Role.EDITOR)
+
+
 @router.post("/investigate", response_model=RootCauseAnalysis)
 def investigate(
-    body: InvestigateRequest, agent: DebuggingAgent = Depends(get_debugging_agent)
+    body: InvestigateRequest,
+    _authorized: None = Depends(investigate_access),
+    agent: DebuggingAgent = Depends(get_debugging_agent),
 ) -> RootCauseAnalysis | JSONResponse:
     try:
         result = agent.investigate_bug(body.repository_id, body.bug_report)
@@ -179,7 +189,7 @@ def investigate(
     return result
 
 
-@router.get("/investigations/{investigation_id}")
+@router.get("/investigations/{investigation_id}", dependencies=[Depends(investigation_access(Role.VIEWER))])
 def get_investigation(
     investigation_id: str = INVESTIGATION_ID,
     repository_id: str | None = Query(default=None, max_length=100),
@@ -202,7 +212,8 @@ def get_investigation(
     )
 
 
-@router.get("/investigations/{investigation_id}/observations")
+@router.get("/investigations/{investigation_id}/observations",
+            dependencies=[Depends(investigation_access(Role.VIEWER))])
 def get_investigation_observations(
     investigation_id: str = INVESTIGATION_ID,
     repository_id: str | None = Query(default=None, max_length=100),
@@ -227,8 +238,8 @@ def get_investigation_observations(
 
 
 async def limit_debug_request_size(request: Request, call_next: Any) -> Any:
-    """Reject oversized bodies on /debug before they are parsed."""
-    if request.url.path.startswith("/debug") and request.method == "POST":
+    """Reject oversized bodies on every write endpoint before they are parsed."""
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         length = request.headers.get("content-length")
         if length is None and request.headers.get("transfer-encoding"):
             return JSONResponse(status_code=411, content={"detail": "Content-Length is required"})

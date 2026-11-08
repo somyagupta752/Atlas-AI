@@ -27,6 +27,7 @@ from app.agents.tool_registry import (
     ToolRegistry,
     UnknownToolError,
 )
+from app.core.logging import run_in_context
 from app.tools.base import (
     ToolContext,
     ToolExecutionError,
@@ -75,7 +76,7 @@ class ToolExecutor:
             return observe("invalid_arguments", error=str(exc))
 
         context.deadline = time.monotonic() + context.tool_timeout_seconds
-        future = _WORKERS.submit(tool.execute, arguments, context)
+        future = _WORKERS.submit(run_in_context(tool.execute), arguments, context)
         try:
             output = future.result(timeout=context.tool_timeout_seconds + TIMEOUT_GRACE_SECONDS)
         except FutureTimeout:

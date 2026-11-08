@@ -1,0 +1,126 @@
+# Dependency, secret, image and configuration scanning. Runs on every PR and push to main, and weekly: new advisories
+# appear without any change to this repository, so a green build last month says nothing about today.
+#
+# Like ci.yml it never deploys, pushes or uses a secret. Findings here BLOCK a merge (see "What blocks" below).
+#
+# What blocks:
+#   * Python runtime dependencies with a known vulnerability (pip-audit)
+#   * Frontend production dependencies with a HIGH or CRITICAL advisory (npm audit)
+#   * Any secret-looking value in the repository history (gitleaks)
+#   * A fixable HIGH or CRITICAL vulnerability in a built image (Trivy)
+#   * A HIGH or CRITICAL misconfiguration in a Dockerfile or compose file (Trivy)
+# What is reported but does not block:
+#   * Frontend DEV dependencies (vite, vitest): they run only on a developer's or CI machine, never in an image. Two
+#     accepted MODERATE advisories in react-router 6.x are listed in docs/security/security-audit.md.
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1"        # Mondays 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.9.7"
+  NODE_VERSION: "22.22.0"
+  TRIVY_IMAGE: aquasec/trivy:0.58.1
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.21.2
+
+jobs:
+  python-dependencies:
+    name: Python dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@v5
+        with: {version: "${{ env.UV_VERSION }}"}
+      - uses: actions/setup-python@v5
+        with: {python-version-file: .python-version}
+      - name: Export the locked runtime dependencies
+        run: uv export --frozen --no-dev --no-emit-project --no-hashes --format requirements-txt -o requirements.audit.txt
+      - name: pip-audit
+        run: uvx pip-audit -r requirements.audit.txt --no-deps --disable-pip --strict
+
+  node-dependencies:
+    name: Frontend dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run: {working-directory: frontend}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: "${{ env.NODE_VERSION }}"}
+      - name: Production dependencies (blocks on HIGH or CRITICAL)
+        run: npm audit --omit=dev --audit-level=high
+      - name: All dependencies, including build and test tools (reported only)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+  secrets:
+    name: Secret scan (full history)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - name: gitleaks
+        run: >-
+          docker run --rm -v "$PWD":/repo "$GITLEAKS_IMAGE" detect --source /repo --redact --no-banner
+          --config /repo/.gitleaks.toml --exit-code 1
+
+  images:
+    name: Image vulnerability scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: api, context: ., target: runtime}
+          - {name: backup, context: ., target: backup}
+          - {name: frontend, context: frontend, target: runtime}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          target: ${{ matrix.target }}
+          load: true
+          push: false
+          tags: atlas-ai-${{ matrix.name }}:scan
+          # A scheduled run must not reuse a cached layer: that would hide base-image updates.
+          no-cache: ${{ github.event_name == 'schedule' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+      - name: Trivy (OS packages and language dependencies; fixable HIGH and CRITICAL only)
+        run: |
+          docker save "atlas-ai-${{ matrix.name }}:scan" -o image.tar
+          docker run --rm -v "$PWD":/work "$TRIVY_IMAGE" image --input /work/image.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --scanners vuln --exit-code 1 --ignorefile /work/.trivyignore
+
+  configuration:
+    name: Dockerfile and compose misconfiguration scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Trivy config
+        run: >-
+          docker run --rm -v "$PWD":/repo:ro "$TRIVY_IMAGE" config /repo --severity HIGH,CRITICAL --exit-code 1
+          --skip-dirs /repo/benchmarks --ignorefile /repo/.trivyignore

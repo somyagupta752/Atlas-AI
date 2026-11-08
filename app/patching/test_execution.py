@@ -20,13 +20,16 @@ import json
 import os
 import re
 import sys
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # types and ParseError only; parsing goes through defusedxml
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any, Protocol
 
+from defusedxml import DefusedXmlException
+from defusedxml import ElementTree as SafeET
 from pydantic import BaseModel, Field
 
+from app.core.observability import instrument_test_run
 from app.patching.models import PatchLimits, TestCaseResult, TestOutcome, TestSuiteRun
 from app.patching.workspace import Workspace
 from app.test_runner import ProcessResult, ResourceLimits, run_process
@@ -101,7 +104,12 @@ def parse_junit(path: Path, workspace: Workspace) -> dict[str, TestCaseResult]:
         raise ValueError("pytest did not write a JUnit report")
     if path.stat().st_size > MAX_JUNIT_BYTES:
         raise ValueError("The JUnit report is too large")
-    root = ET.fromstring(path.read_bytes())
+    # The report is written by the repository's own test run, so it is attacker-controlled. defusedxml refuses DTDs and
+    # entity declarations outright, which closes entity-expansion ("billion laughs") and external-entity attacks.
+    try:
+        root = SafeET.fromstring(path.read_bytes(), forbid_dtd=True)
+    except DefusedXmlException:
+        raise ValueError("The JUnit report contains forbidden XML constructs") from None
     results: dict[str, TestCaseResult] = {}
     for case in root.iter("testcase"):
         name = case.get("name", "")
@@ -189,6 +197,7 @@ class PytestRunner:
         return ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--no-header", "-o", "junit_family=xunit1",
                 "--junitxml=<meta>/junit.xml", "--rootdir=.", *targets]
 
+    @instrument_test_run("local")
     def run(
         self,
         workspace: Workspace,

@@ -1,0 +1,6 @@
+# Trivy exceptions. Empty on purpose.
+#
+# Add a finding here only with: the ID, WHY it does not apply to Atlas (not "no fix available": the scan already
+# ignores unfixed vulnerabilities), who accepted it, and an expiry date after which it must be reviewed again.
+#
+#   CVE-YYYY-NNNNN exp:2027-01-31   # reason - accepted by <name> on <date>

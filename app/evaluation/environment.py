@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -21,7 +22,14 @@ def _git(*args: str) -> str | None:
 
 
 def git_info() -> dict[str, Any]:
-    """Commit and whether the working tree had uncommitted changes. Not cached: it can change."""
+    """Commit and whether the working tree had uncommitted changes. Not cached: it can change.
+
+    An image has no ``.git``; its build records the commit in ``ATLAS_REVISION`` (a build argument), and the tree is
+    by definition clean.
+    """
+    baked = os.environ.get("ATLAS_REVISION")
+    if baked and baked != "unknown":
+        return {"commit": baked, "dirty": False, "source": "image"}
     status = _git("status", "--porcelain", "--", ".", ":(exclude)benchmarks/patching/results")
     return {"commit": _git("rev-parse", "HEAD"), "dirty": None if status is None else bool(status)}
 

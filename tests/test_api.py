@@ -16,6 +16,15 @@ from app.repository import BenchmarkExecutionRepository
 from app.test_runner import TestRunResult
 
 
+@pytest.fixture(autouse=True)
+def _enable_host_benchmarks(monkeypatch):
+    """POST /benchmarks/run is off by default; these tests are about its behaviour."""
+    from app.config import get_settings as real
+
+    monkeypatch.setattr("app.main.get_settings", lambda: real().model_copy(update={"benchmarks_endpoint_enabled": True}))
+
+
+
 @pytest.fixture
 def client(db_session):
     # Route the API to the rollback-wrapped session so tests leave no rows behind.

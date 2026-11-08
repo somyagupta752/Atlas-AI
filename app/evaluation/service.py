@@ -14,13 +14,14 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.config import Settings
+from app.core.logging import run_in_context
 from app.evaluation.benchmarks import BenchmarkSuite, UnknownBenchmarkError, load_suite
 from app.evaluation.environment import sha256_json
 from app.evaluation.models import EvaluationCaseResult, EvaluationRun, RunStatus
@@ -71,9 +72,12 @@ class RunRequest(BaseModel):
 
 
 class RunConflictError(Exception):
-    def __init__(self, message: str, existing_run_id: uuid.UUID | None = None) -> None:
+    def __init__(self, message: str, existing_run_id: uuid.UUID | None = None,
+                 existing_run_owned_by_caller: bool = False) -> None:
         super().__init__(message)
         self.existing_run_id = existing_run_id
+        # The id of someone else's run is never returned.
+        self.existing_run_owned_by_caller = existing_run_owned_by_caller
 
 
 class RunRequestError(ValueError):
@@ -88,7 +92,7 @@ class RunDispatcher:
         self._lock = threading.Lock()
 
     def submit(self, run_id: uuid.UUID, runner: EvaluationRunner, context: RunContext) -> None:
-        thread = threading.Thread(target=runner.execute, args=(run_id, context), name=f"evaluation-{run_id}",
+        thread = threading.Thread(target=run_in_context(runner.execute), args=(run_id, context), name=f"evaluation-{run_id}",
                                   daemon=True)
         with self._lock:
             self._threads[run_id] = (thread, runner)
@@ -99,8 +103,21 @@ class RunDispatcher:
             entry = self._threads.get(run_id)
         if entry is None or not entry[0].is_alive():
             return False
-        entry[1].cancel_event.set()
+        entry[1].abort()
         return True
+
+    def cancel_all(self, wait_seconds: float = 0) -> int:
+        """Cancel every active run (shutdown). Returns how many were asked to stop."""
+        with self._lock:
+            entries = list(self._threads.items())
+        count = 0
+        for run_id, (thread, runner) in entries:
+            if thread.is_alive():
+                runner.abort()
+                count += 1
+        for _run_id, (thread, _runner) in entries:
+            thread.join(wait_seconds / max(count, 1))
+        return count
 
     def is_active(self, run_id: uuid.UUID) -> bool:
         with self._lock:
@@ -133,9 +150,10 @@ class EvaluationService:
     suite: BenchmarkSuite = field(default_factory=load_suite)
     runner_factory: Callable[..., EvaluationRunner] = EvaluationRunner
 
-    def start(self, request: RunRequest) -> tuple[EvaluationRun, bool]:
+    def start(self, request: RunRequest, user: Any = None) -> tuple[EvaluationRun, bool]:
         """Create the run and start it. Returns ``(run, created)``; ``created`` is False for an idempotent repeat."""
-        config_row = ConfigurationRepository(self.session, self.settings).get(request.configuration_id)
+        config_row = ConfigurationRepository(self.session, self.settings).get(request.configuration_id, viewer=user)
+        owner_id = user.id if user is not None else None
         config = config_row.config
         self._check_request(request, config)
         try:
@@ -158,12 +176,13 @@ class EvaluationService:
 
         # Serialise run creation, so two simultaneous requests cannot both pass the checks below.
         self.session.execute(text("SELECT pg_advisory_xact_lock(hashtext('atlas-evaluation-start'))"))
+        namespaced_key = f"{owner_id}:{request.idempotency_key}" if request.idempotency_key else None
         if request.idempotency_key:
             existing = self.session.scalar(select(EvaluationRun).where(
-                EvaluationRun.idempotency_key == request.idempotency_key))
+                EvaluationRun.idempotency_key == namespaced_key, EvaluationRun.owner_id == owner_id))
             if existing is not None:
                 if existing.environment.get("request_fingerprint") != fingerprint:
-                    raise RunConflictError("This idempotency_key was used for a different request", existing.id)
+                    raise RunConflictError("This idempotency_key was used for a different request", existing.id, True)
                 self.session.rollback()
                 return existing, False
         active = self.session.scalar(select(EvaluationRun).where(
@@ -172,7 +191,8 @@ class EvaluationService:
             same = active.environment.get("request_fingerprint") == fingerprint
             raise RunConflictError(
                 "An identical evaluation is already running" if same else
-                "Another evaluation is still running; wait for it to finish or cancel it", active.id)
+                "Another evaluation is still running; wait for it to finish or cancel it", active.id,
+                active.owner_id == owner_id)
 
         run = EvaluationRun(
             name=request.name, status=RunStatus.PENDING.value, evaluation_mode=request.mode,
@@ -181,7 +201,7 @@ class EvaluationService:
             total_cases=units,
             environment={**environment_record(config, self.settings, self.suite, context.engine, request.mode,
                                               request.diagnosis_mode), "request_fingerprint": fingerprint},
-            budget_limit_usd=None if budget is None else _decimal(budget), idempotency_key=request.idempotency_key)
+            budget_limit_usd=None if budget is None else _decimal(budget), idempotency_key=namespaced_key, owner_id=owner_id)
         RunRepository(self.session).add_run(run)
         self.session.commit()
         self.dispatcher.submit(run.id, runner, context)

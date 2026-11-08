@@ -35,6 +35,9 @@ from app.agents.agent import (
 )
 from app.agents.repository import InvestigationNotFoundError, InvestigationRepository
 from app.agents.schemas import RootCauseAnalysis
+from app.core import metrics
+from app.core.logging import log_event
+from app.core.observability import workflow_scope
 from app.patching.applier import ApplierError, apply_patch
 from app.patching.budget import LLMBudget, LLMPricingUnknownError, model_prices
 from app.patching.generator import (
@@ -202,6 +205,31 @@ class PatchingService:
     ) -> PatchExecution:
         """Raises before any work for: not found, not eligible, access denied, bad request.
         Every later problem is part of the returned execution."""
+        with workflow_scope(investigation_id):
+            return self._generate_and_verify(investigation_id, repository_id, max_attempts, run_full_test_suite)
+
+    def _generate_and_verify(self, investigation_id: str, repository_id: str | None, max_attempts: int | None,
+                             run_full_test_suite: bool) -> PatchExecution:
+        started = time.perf_counter()
+        execution = self._generate_and_verify_inner(investigation_id, repository_id, max_attempts,
+                                                    run_full_test_suite)
+        elapsed = time.perf_counter() - started
+        metrics.PATCH_EXECUTIONS.labels(str(execution.status)).inc()
+        for attempt in execution.attempts:
+            metrics.PATCH_ATTEMPTS.labels(str(attempt.status)).inc()
+            if attempt.verification is not None and any(
+                    c.name in ("regression_tests", "full_test_suite") and c.status == "failed"
+                    for c in attempt.verification.checks):
+                metrics.PATCH_REGRESSIONS.inc()
+        log_event(logger, "patch_verification_completed", repository_id=execution.repository_id,
+                  execution_id=execution.execution_id, outcome=str(execution.status),
+                  attempts=len(execution.attempts), stop_reason=execution.stop_reason,
+                  failure_reason=execution.failure_reason, duration_ms=round(elapsed * 1000, 1),
+                  model=execution.model)
+        return execution
+
+    def _generate_and_verify_inner(self, investigation_id: str, repository_id: str | None,
+                                   max_attempts: int | None, run_full_test_suite: bool) -> PatchExecution:
         investigation = self._investigations.load(investigation_id)
         if repository_id is not None and investigation.repository_id != repository_id:
             raise InvestigationNotFoundError(investigation_id)  # never reveal other repositories

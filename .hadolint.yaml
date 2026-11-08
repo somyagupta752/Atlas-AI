@@ -1,0 +1,9 @@
+# Hadolint configuration for every Dockerfile in the repository.
+ignored:
+  # DL3006: hadolint cannot see through `FROM ${ARG}`. Every base image is declared as an ARG with an explicit tag at the
+  # top of the Dockerfile, and tests/deploy/test_compose.py checks the Dockerfiles.
+  - DL3006
+  # DL3008: pinning apt packages to exact Debian versions breaks the build whenever Debian ships a security update. The
+  # base image tag is pinned instead, and Trivy (security.yml) scans the result for known vulnerabilities.
+  - DL3008
+failure-threshold: warning

@@ -298,6 +298,10 @@ class WorkspaceManager:
         with self._lock:
             self._active.pop(workspace.workspace_id, None)
 
+    def purge_all_inactive(self) -> int:
+        """Delete every workspace this process is not using. For startup, after a crash or restart."""
+        return self.purge_expired(now=float("inf"))
+
     def purge_expired(self, now: float | None = None) -> int:
         """Delete retained workspaces older than ``max_age_seconds``. Returns the count."""
         if not self.base_dir.is_dir():

@@ -1,0 +1,15 @@
+# gitleaks configuration (used by .github/workflows/security.yml).
+# Start from the default ruleset, then allow ONLY the fake credentials that tests use on purpose: a test that proves
+# a key is redacted has to contain something key-shaped. Nothing outside test files is allowlisted, so a real secret in
+# application code, configuration, docs or workflows still fails the build.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Deliberately fake credentials in tests, and Python bytecode caches of those tests"
+paths = [
+  '''(^|/)tests/''',                       # Python tests
+  '''\.(test|spec)\.[cm]?[jt]sx?$''',      # frontend unit tests and browser specs (fake tokens that prove redaction and storage rules)
+  '''(^|/)frontend/e2e/''',               # the browser-test harness and its fixtures
+  '''__pycache__/''',
+]

@@ -33,6 +33,17 @@ from app.evaluation.models import (
 )
 
 
+def _can_see(owner_id: uuid.UUID | None, viewer: Any) -> bool:
+    return viewer.is_admin or owner_id is None or owner_id == viewer.id
+
+
+def _scope(query, column, viewer):
+    """Restrict a query to the viewer's own rows and system rows (NULL owner). Operators see everything."""
+    if viewer is None or viewer.is_admin:
+        return query
+    return query.where((column == viewer.id) | (column.is_(None)))
+
+
 class ConfigurationNotFoundError(LookupError):
     pass
 
@@ -46,21 +57,22 @@ class ConfigurationRepository:
         self._session = session
         self._settings = settings
 
-    def create(self, spec: ConfigurationSpec) -> EvaluationConfiguration:
+    def create(self, spec: ConfigurationSpec, owner_id: uuid.UUID | None = None) -> EvaluationConfiguration:
         """Version 1 of a new name. An existing name is a conflict: clone it to make a new version."""
         if self._session.scalar(select(func.count()).select_from(EvaluationConfiguration)
                                 .where(EvaluationConfiguration.name == spec.name)):
             raise ConfigurationConflictError(
                 f"A configuration named {spec.name!r} exists. Clone it to create a new version.")
-        return self._insert(spec, version=1, parent=None)
+        return self._insert(spec, version=1, parent=None, owner_id=owner_id)
 
     def clone(self, source_id: uuid.UUID, overrides: dict[str, Any] | None = None,
-              name: str | None = None) -> EvaluationConfiguration:
+              name: str | None = None, owner: Any = None) -> EvaluationConfiguration:
         """A new row from an existing one. Same name: next version. New name: version 1 of that name.
 
         Prompt fingerprints are recomputed, which is how a configuration picks up changed prompts.
         """
-        source = self.get(source_id)
+        source = self.get(source_id, viewer=owner)
+        owner_id = owner.id if owner is not None else source.owner_id
         document = merge_overrides(
             {k: v for k, v in source.config.items() if k in ConfigurationSpec.model_fields},
             overrides or {},
@@ -71,15 +83,17 @@ class ConfigurationRepository:
             if self._session.scalar(select(func.count()).select_from(EvaluationConfiguration)
                                     .where(EvaluationConfiguration.name == name)):
                 raise ConfigurationConflictError(f"A configuration named {name!r} exists")
-            return self._insert(spec, version=1, parent=source)
+            return self._insert(spec, version=1, parent=source, owner_id=owner_id)
         latest = self._session.scalar(select(func.max(EvaluationConfiguration.version))
                                       .where(EvaluationConfiguration.name == source.name)) or 0
-        return self._insert(spec, version=latest + 1, parent=source)
+        return self._insert(spec, version=latest + 1, parent=source, owner_id=owner_id)
 
-    def _insert(self, spec: ConfigurationSpec, *, version: int, parent: EvaluationConfiguration | None):
+    def _insert(self, spec: ConfigurationSpec, *, version: int, parent: EvaluationConfiguration | None,
+                owner_id: uuid.UUID | None = None):
         document = build_configuration(spec, self._settings)
         row = EvaluationConfiguration(
             name=spec.name, version=version, parent_configuration_id=parent.id if parent else None,
+            owner_id=owner_id,
             config=document, config_hash=configuration_hash(document), **denormalised_fields(spec),
         )
         try:
@@ -90,14 +104,17 @@ class ConfigurationRepository:
             raise ConfigurationConflictError("The configuration version already exists; retry") from None
         return row
 
-    def get(self, configuration_id: uuid.UUID) -> EvaluationConfiguration:
+    def get(self, configuration_id: uuid.UUID, viewer: Any = None) -> EvaluationConfiguration:
         row = self._session.get(EvaluationConfiguration, configuration_id)
+        if row is not None and viewer is not None and not _can_see(row.owner_id, viewer):
+            row = None
         if row is None:
             raise ConfigurationNotFoundError(str(configuration_id))
         return row
 
-    def list_all(self, *, limit: int, offset: int, name: str | None = None) -> tuple[list[EvaluationConfiguration], int]:
-        query = select(EvaluationConfiguration)
+    def list_all(self, *, limit: int, offset: int, name: str | None = None,
+                 viewer: Any = None) -> tuple[list[EvaluationConfiguration], int]:
+        query = _scope(select(EvaluationConfiguration), EvaluationConfiguration.owner_id, viewer)
         if name:
             query = query.where(EvaluationConfiguration.name == name)
         total = self._session.scalar(select(func.count()).select_from(query.subquery())) or 0
@@ -169,8 +186,8 @@ class RunRepository:
         return run
 
     def list_runs(self, *, limit: int, offset: int, status: str | None = None, mode: str | None = None,
-                  configuration_id: uuid.UUID | None = None) -> tuple[list[EvaluationRun], int]:
-        query = select(EvaluationRun)
+                  configuration_id: uuid.UUID | None = None, viewer: Any = None) -> tuple[list[EvaluationRun], int]:
+        query = _scope(select(EvaluationRun), EvaluationRun.owner_id, viewer)
         if status:
             query = query.where(EvaluationRun.status == status)
         if mode:

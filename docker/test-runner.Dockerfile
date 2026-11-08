@@ -20,3 +20,7 @@ RUN pip install "pytest==9.2.0" \
     && rm -rf /root/.cache
 
 WORKDIR /workspace
+
+# Never root by default. Atlas always starts the container with an explicit --user, so this only matters if someone
+# runs the image without Atlas's flags.
+USER 65534:65534

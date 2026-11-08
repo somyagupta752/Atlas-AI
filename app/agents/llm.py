@@ -518,7 +518,9 @@ def create_llm_provider(settings: Any) -> LLMProvider:
                 "Set LLM_ALLOW_EXTERNAL=true to allow it."
             )
         key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else None
-        return AnthropicProvider(
+        from app.core.observability import InstrumentedLLM
+
+        return InstrumentedLLM(AnthropicProvider(
             model=settings.llm_model,
             api_key=key,
             max_tokens=settings.llm_max_tokens,
@@ -527,7 +529,7 @@ def create_llm_provider(settings: Any) -> LLMProvider:
             connect_timeout_seconds=settings.llm_connect_timeout_seconds,
             max_retries=settings.llm_max_retries,
             server_fallbacks=settings.llm_server_fallbacks,
-        )
+        ))
     raise LLMConfigurationError(f"Unknown LLM provider: {settings.llm_provider!r}")
 
 

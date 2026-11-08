@@ -113,3 +113,25 @@ def test_interrupted_runs_are_closed_as_partial(db_session, make_config, make_ru
     assert run.status == "partial" and "interrupted" in run.failure_reason
     statuses = {c.case_id: c.status for c in run.cases}
     assert statuses == {"bug-001-average": "completed", "bug-003-pagination": "incomplete"}
+
+
+def test_a_failed_evaluation_can_be_reconstructed_from_its_logs(db_session, json_logs):
+    llm = FakeLLM([submit(AVERAGE_FIX)] * 4, model=MODEL, pricing=None)
+    client = install(db_session, llm)
+    cid = config(client)
+    run_id = live(client, cid, benchmark_ids=["bug-001-average", "bug-003-pagination"],
+                  max_cost_usd=0.0001).json()["id"]
+    events = [e for e in json_logs.events() if e.get("workflow_id") == run_id]
+    names = [e["event"] for e in events]
+    assert names[0] == "evaluation_started" and names[-1] == "evaluation_finished"
+    finished = events[-1]
+    assert finished["status"] == "partial" and finished["cases"] == 2 and finished["unfinished"] == 2
+    first = next(e for e in events if e["event"] == "evaluation_case_completed")
+    assert first["case_id"] == "bug-001-average" and first["status"] == "incomplete"
+    assert "budget" in first["failure_reason"] and first["final_verified"] is None
+    skipped = [e for e in events if e["event"] == "evaluation_case_not_started"]
+    assert [e["case_id"] for e in skipped] == ["bug-003-pagination"] and "budget" in skipped[0]["reason"]
+    assert events[0]["budget_usd"] == 0.0001
+    from app.core import metrics
+
+    assert (metrics.REGISTRY.get_sample_value("atlas_evaluation_runs_total", {"status": "partial"}) or 0) >= 1

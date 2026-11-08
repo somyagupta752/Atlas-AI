@@ -30,3 +30,16 @@ htmlcov/
 # Frontend
 node_modules/
 frontend/dist/
+
+# Deployment (15.7): secrets and per-deployment variables never enter Git
+secrets/
+deploy.env
+deploy.env.*
+!deploy.env.example
+backups/
+
+# Browser tests (Playwright): per-run state (database name, server log), reports and traces
+frontend/e2e/.state/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/

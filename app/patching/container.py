@@ -35,18 +35,23 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from app.core import metrics as _metrics
+from app.core.observability import instrument_test_run
 from app.patching.models import PatchLimits, TestSuiteRun
 from app.patching.test_execution import PytestRunner
 from app.patching.workspace import Workspace
 from app.test_runner import ProcessResult, run_process
 
 DEFAULT_IMAGE = "atlas-ai-test-runner:py3.12.13-pytest9.2.0"
+INSTANCE_DEFAULT = "default"
+NAME_PREFIX = "atlas-test-"
 CONTAINER_ROOT = "/workspace"
 CONTAINER_OUT = "/atlas-out"
 INNER_TIMEOUT_EXIT = 124  # coreutils timeout: the command was stopped
@@ -98,11 +103,23 @@ class ContainerTestRunner(PytestRunner):
     isolated = True
 
     def __init__(self, limits: PatchLimits | None = None, container: ContainerLimits | None = None,
-                 *, docker: str | None = None) -> None:
+                 *, docker: str | None = None, instance_id: str = INSTANCE_DEFAULT) -> None:
         super().__init__(limits)
         self.container = container or ContainerLimits()
         self.docker = docker or shutil.which("docker") or "docker"
         self._image_id: str | None = None
+        # Containers this runner started and has not yet removed. Cancellation and shutdown remove exactly these.
+        self.instance_id = instance_id
+        self._running: set[str] = set()
+        self._running_lock = threading.Lock()
+
+    def kill_active(self) -> list[str]:
+        """Force-remove every container this runner is running now (cancellation, shutdown). Returns the names."""
+        with self._running_lock:
+            names = sorted(self._running)
+        for name in names:
+            self._remove(name)
+        return names
 
     # --- availability -----------------------------------------------------------------
 
@@ -150,6 +167,7 @@ class ContainerTestRunner(PytestRunner):
         inner = max(1, int(timeout))
         return [
             self.docker, "run", "--init", "--name", name, "--label", "atlas.patching=1",
+            "--label", f"atlas.instance={self.instance_id}", "--label", f"atlas.started={int(time.time())}",
             "--network", "none",
             "--read-only",
             "--tmpfs", f"/tmp:rw,nosuid,nodev,size={c.tmpfs_bytes}",
@@ -173,14 +191,17 @@ class ContainerTestRunner(PytestRunner):
             f"--junitxml={CONTAINER_OUT}/junit.xml", f"--rootdir={CONTAINER_ROOT}", *targets,
         ]
 
+    @instrument_test_run("container")
     def run(self, workspace: Workspace, targets: list[str], *, label: str, kind: str,
             timeout: float) -> TestSuiteRun:
         self.validate_targets(targets)
         self._counter += 1
         out_dir = workspace.meta / f"container-{label}-{self._counter}"
         out_dir.mkdir(mode=0o700)
-        name = f"atlas-test-{uuid.uuid4().hex[:20]}"
+        name = f"{NAME_PREFIX}{uuid.uuid4().hex[:20]}"
         started = time.monotonic()
+        with self._running_lock:
+            self._running.add(name)
         try:
             command = self.docker_command(name, workspace, out_dir, targets, timeout)
             process = run_process(
@@ -196,6 +217,8 @@ class ContainerTestRunner(PytestRunner):
                                 time.monotonic() - started)
         finally:
             self._remove(name)
+            with self._running_lock:
+                self._running.discard(name)
 
         if process.timed_out:  # the host backstop fired: the container was killed above
             return self._to_run(process, workspace, out_dir / "junit.xml", targets, label=label, kind=kind)
@@ -229,10 +252,13 @@ class ContainerTestRunner(PytestRunner):
     def _remove(self, name: str) -> None:
         """Kill and remove the container if it still exists. Idempotent; never raises."""
         try:
-            subprocess.run([self.docker, "rm", "-f", name], capture_output=True, timeout=30, env=_cli_env(),
-                           stdin=subprocess.DEVNULL, check=False)
+            done = subprocess.run([self.docker, "rm", "-f", name], capture_output=True, timeout=30, env=_cli_env(),
+                                  stdin=subprocess.DEVNULL, check=False)
+            # "No such container" is the normal case after --rm-style exits; anything else is a leak risk.
+            if done.returncode != 0 and b"No such container" not in done.stderr:
+                _metrics.CONTAINER_CLEANUP_FAILURES.inc()
         except (OSError, subprocess.SubprocessError):
-            pass
+            _metrics.CONTAINER_CLEANUP_FAILURES.inc()
 
 
 def _container_paths(process: ProcessResult) -> ProcessResult:
@@ -250,3 +276,40 @@ def leftover_containers(docker: str | None = None) -> list[str]:
         capture_output=True, text=True, timeout=15, env=_cli_env(), stdin=subprocess.DEVNULL, check=False,
     )
     return [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
+
+
+def cleanup_orphans(instance_id: str = INSTANCE_DEFAULT, *, keep: frozenset[str] = frozenset(),
+                    docker: str | None = None) -> dict[str, list[str]]:
+    """Remove worker containers left behind by a crashed or restarted process. Returns ``{removed, failed}``.
+
+    A container is removed only if ALL of these hold: it carries the label ``atlas.patching=1``, it carries this
+    deployment's ``atlas.instance`` label, and its name starts with ``atlas-test-``. Other containers, including
+    other Atlas deployments on the same Docker host, are never touched. Never raises: when Docker is unavailable
+    the report says so and startup continues.
+    """
+    docker = docker or shutil.which("docker") or "docker"
+    report: dict[str, list[str]] = {"removed": [], "failed": []}
+    try:
+        listed = subprocess.run(
+            [docker, "ps", "-a", "--filter", "label=atlas.patching=1", "--filter", f"label=atlas.instance={instance_id}",
+             "--format", "{{.Names}}"],
+            capture_output=True, text=True, timeout=20, env=_cli_env(), stdin=subprocess.DEVNULL, check=False)
+    except (OSError, subprocess.SubprocessError):
+        report["failed"].append("docker is unavailable")
+        return report
+    if listed.returncode != 0:
+        report["failed"].append("docker is unavailable")
+        return report
+    for name in (line.strip() for line in listed.stdout.splitlines()):
+        if not name or not name.startswith(NAME_PREFIX) or name in keep:
+            continue
+        try:
+            done = subprocess.run([docker, "rm", "-f", name], capture_output=True, timeout=30, env=_cli_env(),
+                                  stdin=subprocess.DEVNULL, check=False)
+            (report["removed"] if done.returncode == 0 else report["failed"]).append(name)
+            if done.returncode != 0:
+                _metrics.CONTAINER_CLEANUP_FAILURES.inc()
+        except (OSError, subprocess.SubprocessError):
+            report["failed"].append(name)
+            _metrics.CONTAINER_CLEANUP_FAILURES.inc()
+    return report

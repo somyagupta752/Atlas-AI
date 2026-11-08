@@ -1,0 +1,44 @@
+# Static analysis for Python and JavaScript (GitHub CodeQL). Results appear in the repository's Security tab.
+# Needs `security-events: write`, which GitHub grants to this workflow only; no repository secret is involved.
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 4 * * 3"      # Wednesdays 04:41 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          # Deliberately buggy benchmark repositories are test data, not code that runs in the product.
+          config: |
+            paths-ignore:
+              - benchmarks
+              - tests
+      - uses: github/codeql-action/analyze@v3
+        with: {category: "/language:${{ matrix.language }}"}

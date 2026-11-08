@@ -43,6 +43,9 @@ from app.agents.repository import InvestigationRepository
 from app.agents.schemas import AgentLimits
 from app.agents.tool_registry import create_default_registry
 from app.config import Settings
+from app.core import metrics
+from app.core.logging import log_event
+from app.core.observability import workflow_scope
 from app.evaluation.benchmarks import BENCHMARKS_DIR, PATCHING_DIR, BenchmarkSuite
 from app.evaluation.configuration import prompts_changed
 from app.evaluation.environment import git_info, runtime_versions
@@ -170,7 +173,8 @@ def default_engine_factory(limits: PatchLimits, settings: Settings, backend: str
 
     runner = ContainerTestRunner(limits, ContainerLimits(
         image=settings.patch_container_image, cpus=settings.patch_container_cpus,
-        memory_bytes=settings.patch_container_memory_mb * 1024 * 1024, pids_limit=settings.patch_container_pids_limit))
+        memory_bytes=settings.patch_container_memory_mb * 1024 * 1024, pids_limit=settings.patch_container_pids_limit),
+        instance_id=settings.instance_id)
     if not runner.available():
         raise TestBackendUnavailableError(f"The container image {settings.patch_container_image} is not available")
     return VerificationEngine(limits, runner=runner)
@@ -243,6 +247,21 @@ class EvaluationRunner:
     workspace_dir: Path | None = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
     clock: Callable[[], float] = time.monotonic
+    _context: Any = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        # Worker containers bind-mount their workspace through the Docker daemon, which resolves the path on the
+        # host. Scratch space must therefore be the configured workspace directory (a shared volume in a
+        # deployment), never the API container's private /tmp.
+        if self.workspace_dir is None and self.settings.patch_workspace_dir is not None:
+            self.workspace_dir = Path(self.settings.patch_workspace_dir)
+            self.workspace_dir.mkdir(parents=True, exist_ok=True)
+
+    def abort(self) -> list[str]:
+        """Cancel: stop between cases and remove the containers running now. Returns the removed names."""
+        self.cancel_event.set()
+        runner = getattr(getattr(self._context, "engine", None), "runner", None)
+        return runner.kill_active() if runner is not None and hasattr(runner, "kill_active") else []
 
     # --- setup (before a record exists) ------------------------------------------------
 
@@ -282,6 +301,11 @@ class EvaluationRunner:
 
     def execute(self, run_id: uuid.UUID, context: RunContext) -> None:
         """Run every selected case, saving as it goes. Always leaves the run in a terminal status."""
+        self._context = context
+        with workflow_scope(str(run_id)):
+            self._execute(run_id, context)
+
+    def _execute(self, run_id: uuid.UUID, context: RunContext) -> None:
         session = self.session_factory()
         repo = RunRepository(session)
         started = self.clock()
@@ -292,6 +316,9 @@ class EvaluationRunner:
             run.status = RunStatus.RUNNING.value
             run.started_at = datetime.now(UTC)
             session.commit()
+            log_event(logger, "evaluation_started", run_id=str(run_id), mode=context.mode,
+                      diagnosis_mode=context.diagnosis_mode, cases=run.total_cases,
+                      budget_usd=context.run_budget_usd, benchmark_version=run.benchmark_version)
             selected = self.suite.select(run.selected_case_ids)
             with tempfile.TemporaryDirectory(prefix="atlas-eval-", dir=self.workspace_dir) as base:
                 workspaces = WorkspaceManager(Path(base))
@@ -478,6 +505,14 @@ class EvaluationRunner:
                     "tools": tools}
         return loaded, diagnosis, evidence, llm.exhausted_by is not None
 
+    def _log_case(self, row: EvaluationCaseResult) -> None:
+        log_event(logger, "evaluation_case_completed", case_id=row.case_id, variant=row.variant, status=row.status,
+                  execution_status=row.execution_status, attempts=row.attempts_count,
+                  final_verified=row.final_verified, heldout_passed=row.heldout_passed,
+                  cost_usd=None if row.total_cost_usd is None else float(row.total_cost_usd),
+                  duration_s=row.total_latency_seconds, failure_reason=row.failure_reason,
+                  level=logging.WARNING if row.status in ("failed", "incomplete") else logging.INFO)
+
     def _finish_case(self, session: Session, row: EvaluationCaseResult, score: PatchCaseScore,
                      execution: PatchExecution | None, diagnosis_evidence: dict[str, Any], case_started: float,
                      ctx: RunContext, *, status: str, reason: str | None, holdout=None, exploratory=None) -> None:
@@ -517,6 +552,7 @@ class EvaluationRunner:
             if final is not None:
                 final.heldout_tests_passed = holdout.get("passed")
         session.commit()
+        self._log_case(row)
 
     # --- bookkeeping ------------------------------------------------------------------------
 
@@ -528,6 +564,8 @@ class EvaluationRunner:
 
     @staticmethod
     def _mark_unstarted_variant(session, run, case, name, reason) -> None:
+        log_event(logger, "evaluation_case_not_started", case_id=case.case_id, variant=name, reason=reason,
+                  level=logging.WARNING)
         session.add(EvaluationCaseResult(
             evaluation_run_id=run.id, case_id=case.case_id, variant=name, category=case.category,
             status="incomplete", failure_reason=reason, evidence={}, attempts_count=0))
@@ -570,6 +608,12 @@ class EvaluationRunner:
         repo.calculate_metrics(run.id, f"initial calculation when the run {status.value}")
         run.status = status.value
         session.commit()
+        metrics.EVALUATION_RUNS.labels(status.value).inc()
+        log_event(logger, "evaluation_finished", run_id=str(run.id), status=status.value, stop=stop,
+                  cases=len(cases), failed=len(failed), unfinished=len(unfinished),
+                  cost_usd=None if run.total_cost_usd is None else float(run.total_cost_usd),
+                  duration_s=run.total_duration_seconds, reason=reason,
+                  level=logging.INFO if status == RunStatus.COMPLETED else logging.WARNING)
 
     def _fail(self, session: Session, repo: RunRepository, run_id: uuid.UUID, reason: str, started: float) -> None:
         try:

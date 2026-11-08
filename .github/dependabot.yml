@@ -1,0 +1,28 @@
+# Weekly update PRs for every dependency ecosystem in the repository. Each PR runs the full CI and security workflows
+# before anyone merges it; nothing is merged or deployed automatically.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly}
+    groups:
+      actions: {patterns: ["*"]}
+  - package-ecosystem: uv
+    directory: /
+    schedule: {interval: weekly}
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: {interval: weekly}
+    # Major versions (vite, vitest, react-router 7) need a person: they change behaviour.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker
+    directory: /
+    schedule: {interval: weekly}
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule: {interval: weekly}
+  - package-ecosystem: docker
+    directory: /docker
+    schedule: {interval: weekly}

@@ -29,6 +29,8 @@ from app.agents.agent import (
 from app.agents.llm import LLMProvider
 from app.agents.repository import InvestigationNotFoundError, InvestigationRepository
 from app.agents.routes import get_llm_provider, get_trusted_test_roots
+from app.auth.access import investigation_access, patch_access
+from app.auth.models import Role
 from app.config import get_settings
 from app.database import get_db
 from app.dependencies import get_allowed_repository_roots, get_graph_context_source
@@ -194,7 +196,7 @@ def get_verification_engine(limits: PatchLimits = Depends(get_patch_limits)) -> 
             cpus=settings.patch_container_cpus,
             memory_bytes=settings.patch_container_memory_mb * 1024**2,
             pids_limit=settings.patch_container_pids_limit,
-        ))
+        ), instance_id=settings.instance_id)
     return VerificationEngine(limits, runner=runner, ruff=RuffRunner(limits, isolated=untrusted))
 
 
@@ -270,7 +272,8 @@ def _execution_out(execution: PatchExecution) -> PatchExecutionOut:
     )
 
 
-@router.post("/investigations/{investigation_id}/patches", response_model=PatchExecutionOut)
+@router.post("/investigations/{investigation_id}/patches", response_model=PatchExecutionOut,
+             dependencies=[Depends(investigation_access(Role.EDITOR))])
 def generate_patch(
     body: GeneratePatchRequest,
     investigation_id: str = INVESTIGATION_ID,
@@ -304,7 +307,7 @@ def generate_patch(
     return out
 
 
-@router.get("/investigations/{investigation_id}/patches")
+@router.get("/investigations/{investigation_id}/patches", dependencies=[Depends(investigation_access(Role.VIEWER))])
 def list_patches(
     investigation_id: str = INVESTIGATION_ID,
     repository_id: str | None = REPOSITORY_QUERY,
@@ -336,7 +339,7 @@ def _proposal(patches: PatchRepository, patch_id: str, repository_id: str | None
         raise HTTPException(status_code=404, detail="Patch not found") from exc
 
 
-@router.get("/patches/{patch_id}")
+@router.get("/patches/{patch_id}", dependencies=[Depends(patch_access(Role.VIEWER))])
 def get_patch(
     patch_id: str = PATCH_ID,
     repository_id: str | None = REPOSITORY_QUERY,
@@ -370,7 +373,7 @@ def get_patch(
     )
 
 
-@router.get("/patches/{patch_id}/verification")
+@router.get("/patches/{patch_id}/verification", dependencies=[Depends(patch_access(Role.VIEWER))])
 def get_patch_verification(
     patch_id: str = PATCH_ID,
     repository_id: str | None = REPOSITORY_QUERY,

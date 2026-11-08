@@ -1,0 +1,237 @@
+# Atlas AI - staging / production stack. docker-compose.yml is the DEVELOPMENT file and is left untouched.
+#
+# Services: api, frontend (nginx), postgres, neo4j, migrate (one-shot), backup (daily), docker-proxy (worker access).
+# Variables are read from the environment or from `--env-file deploy.env` (see deploy.env.example); the ones marked
+# required have no default on purpose, so a forgotten value stops the deployment instead of using a guess.
+# Secrets are FILES under ${SECRETS_DIR} (default ./secrets), never environment values and never committed.
+# See docs/deployment.md for the runbook and docs/security/security-boundaries.md for what is and is not a boundary.
+name: ${COMPOSE_PROJECT_NAME:-atlas}
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+
+# Settings that Atlas validates at startup in a deployed environment. Every Atlas container (api, migrate, backup)
+# loads the same settings code, so each needs values that pass those rules.
+x-atlas-env: &atlas-env
+  ENVIRONMENT: ${ATLAS_ENVIRONMENT:-production}
+  LOG_FORMAT: json
+  PATCH_TEST_BACKEND: container
+  PATCH_CONTAINER_ALLOW_UNTRUSTED: "true"   # the container is the isolation; trusted host roots are forbidden here
+  PATCH_WORKSPACE_DIR: ${WORKSPACE_HOST_DIR:?absolute path that exists on the Docker host}
+
+services:
+  api:
+    <<: *hardening
+    image: ${REGISTRY:?registry prefix}/atlas-ai-api:${ATLAS_VERSION:?image tag}
+    environment:
+      <<: *atlas-env
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      PATCH_CONTAINER_IMAGE: ${WORKER_IMAGE:-atlas-ai-test-runner:py3.12.13-pytest9.2.0}
+      ALLOWED_REPOSITORY_ROOTS: '["/srv/repositories"]'
+      AUTH_COOKIE_SECURE: "true"
+      AUTH_REGISTRATION_OPEN: ${AUTH_REGISTRATION_OPEN:-true}
+      # Same-origin through the dashboard's proxy, so no browser origin needs CORS. Set only for another origin (https).
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-[]}
+      INSTANCE_ID: ${INSTANCE_ID:-atlas}
+      LLM_ALLOW_EXTERNAL: ${LLM_ALLOW_EXTERNAL:-false}
+      # Password-reset email (Task 15.5). Start-up refuses to run without a mail server and a public https:// address unless
+      # AUTH_PASSWORD_RESET_ENABLED=false. The SMTP password is the smtp_password secret file, never a variable.
+      AUTH_PASSWORD_RESET_ENABLED: ${AUTH_PASSWORD_RESET_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      # SECURITY: the Docker CLI reaches the daemon only through the proxy on the `workers` network. The host socket
+      # is never mounted into this container. The proxy narrows the API surface; it does NOT make Docker access safe
+      # (see the comment on docker-proxy).
+      DOCKER_HOST: tcp://docker-proxy:2375
+      DOCKER_CONFIG: /tmp/.docker               # the root filesystem is read-only
+      # Only the dashboard's proxy is on `app`; trust its X-Forwarded-For so each user gets their own rate limit.
+      FORWARDED_ALLOW_IPS: ${APP_SUBNET:-172.29.20.0/24}
+    secrets: [database_url, auth_secret_key, neo4j_password, anthropic_api_key, metrics_token, smtp_password]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      neo4j: {condition: service_healthy}
+      docker-proxy: {condition: service_started}
+    read_only: true
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    volumes:
+      # The worker containers bind-mount workspaces through the Docker daemon, which resolves the path ON THE HOST.
+      # The directory therefore must exist on the host and be mounted at the SAME path here.
+      - ${WORKSPACE_HOST_DIR}:${WORKSPACE_HOST_DIR}
+      # Repositories to analyse, read-only: Atlas copies them into workspaces and never writes to the originals.
+      - ${REPOSITORIES_DIR:?host directory holding the repositories}:/srv/repositories:ro
+    networks: [app, backend, workers, egress]   # egress: only for the model provider; remove it to run offline
+    stop_grace_period: 45s
+    mem_limit: 2g
+    pids_limit: 512
+
+  migrate:
+    # One-shot: applies Alembic migrations, then exits. The api waits for it to complete successfully.
+    image: ${REGISTRY}/atlas-ai-api:${ATLAS_VERSION}
+    command: ["alembic", "upgrade", "head"]
+    environment: *atlas-env
+    secrets: [database_url, auth_secret_key, smtp_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    healthcheck: {disable: true}
+    networks: [backend]
+    restart: "no"
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 512m
+
+  frontend:
+    <<: *hardening
+    image: ${REGISTRY}/atlas-ai-frontend:${ATLAS_VERSION}
+    depends_on: {api: {condition: service_healthy}}
+    # Bound to loopback by default: terminate TLS in a proxy on the host (the session cookie is Secure) and forward
+    # to this port. Use FRONTEND_BIND=0.0.0.0 only when something else already restricts access.
+    ports: ["${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    networks: [edge, app]
+    mem_limit: 256m
+    pids_limit: 128
+
+  postgres:
+    <<: *hardening
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_DB: atlas
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    # NO published port. Only services on the internal `backend` network can connect.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # The image starts as root to prepare its data directory, then drops to the postgres user.
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+    networks: [backend]
+    mem_limit: 2g
+    pids_limit: 256
+    stop_grace_period: 60s
+
+  neo4j:
+    <<: *hardening
+    image: neo4j:5.15-community
+    # This image version has no NEO4J_AUTH_FILE, so the secret file is read at start-up and the original entrypoint
+    # (tini -g -- /startup/docker-entrypoint.sh neo4j) is run unchanged. `$$` stops Compose from interpolating.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'export NEO4J_AUTH="neo4j/$$(cat /run/secrets/neo4j_password)"; exec tini -g -- /startup/docker-entrypoint.sh neo4j'
+    secrets: [neo4j_password]
+    volumes: ["neo4jdata:/data"]
+    # NO published port.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+    networks: [backend]
+    mem_limit: 2g
+    pids_limit: 512
+    stop_grace_period: 120s   # a shorter wait can leave a stale PID file that blocks the next start
+
+  # --- Docker access for the test workers -------------------------------------------------------------------------
+  # SECURITY - READ THIS. This proxy limits WHICH Docker API calls the api container can make (no exec, volumes,
+  # networks, build, swarm...). It cannot limit WHAT those calls contain: `POST /containers/create` is allowed because
+  # workers need it, and a create request may ask for `--privileged` or a bind mount of `/`. Anyone who controls the api
+  # process can therefore still obtain root on this Docker host. Mounting the socket read-only (`:ro`) does not change
+  # that: it restricts file permissions on the socket, not the commands sent through it.
+  # Mitigations in place: the api is not reachable from outside, runs read-only and without capabilities, and is the
+  # only container on the `workers` network. Required for untrusted code: run this stack on a host (or VM) that holds
+  # nothing else, and prefer a rootless Docker daemon or a dedicated worker VM (docs/security/security-boundaries.md).
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      CONTAINERS: 1    # create, inspect, list, remove: what `docker run` / `docker rm -f` / `docker ps` need
+      IMAGES: 1        # inspect (and, unavoidably, pull) the worker image
+      POST: 1          # create/start/kill/wait/attach are POST requests
+      DELETE: 1        # docker rm -f
+      ALLOW_START: 1
+      ALLOW_STOP: 1
+      ALLOW_RESTARTS: 0
+      EXEC: 0
+      VOLUMES: 0
+      NETWORKS: 0
+      BUILD: 0
+      COMMIT: 0
+      SERVICES: 0
+      SWARM: 0
+      NODES: 0
+      TASKS: 0
+      SECRETS: 0
+      CONFIGS: 0
+      PLUGINS: 0
+      AUTH: 0
+      SESSION: 0
+      DISTRIBUTION: 0
+      INFO: 0
+      SYSTEM: 0
+      EVENTS: 0
+      LOG_LEVEL: warning
+    volumes: ["${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro"]
+    networks: [workers]
+    mem_limit: 128m
+
+  backup:
+    <<: *hardening
+    # Built from the `backup` target: it has pg_dump/pg_restore 16. The api image does not, and cannot see this volume.
+    image: ${REGISTRY}/atlas-ai-backup:${ATLAS_VERSION}
+    command:
+      - sh
+      - -c
+      - 'while true; do python -m app.ops.backup backup && python -m app.ops.backup verify || echo "backup or verification FAILED" >&2; sleep 86400; done'
+    environment:
+      <<: *atlas-env
+      BACKUP_DIR: /var/lib/atlas/backups
+    secrets: [database_url, auth_secret_key, backup_encryption_key, smtp_password]
+    volumes: ["backups:/var/lib/atlas/backups"]
+    depends_on: {postgres: {condition: service_healthy}}
+    healthcheck: {disable: true}
+    read_only: true
+    tmpfs: ["/tmp"]
+    networks: [backend]
+    mem_limit: 512m
+
+networks:
+  edge: {}                                  # the only network with published ports: the dashboard
+  app:
+    internal: true                          # dashboard <-> api, no route to the internet
+    ipam: {config: [{subnet: "${APP_SUBNET:-172.29.20.0/24}"}]}
+  backend:
+    internal: true                          # api, migrate, backup, postgres, neo4j: no route to the internet
+  workers:
+    internal: true                          # api <-> docker-proxy only
+  egress: {}                                # api only, for the language model provider
+
+volumes:
+  pgdata:
+  neo4jdata:
+  backups:
+
+secrets:
+  # Create with restrictive permissions and ownership; see docs/deployment.md. Optional ones may be empty files.
+  database_url: {file: "${SECRETS_DIR:-./secrets}/database_url"}
+  auth_secret_key: {file: "${SECRETS_DIR:-./secrets}/auth_secret_key"}
+  neo4j_password: {file: "${SECRETS_DIR:-./secrets}/neo4j_password"}
+  postgres_password: {file: "${SECRETS_DIR:-./secrets}/postgres_password"}
+  backup_encryption_key: {file: "${SECRETS_DIR:-./secrets}/backup_encryption_key"}
+  anthropic_api_key: {file: "${SECRETS_DIR:-./secrets}/anthropic_api_key"}
+  metrics_token: {file: "${SECRETS_DIR:-./secrets}/metrics_token"}
+  smtp_password: {file: "${SECRETS_DIR:-./secrets}/smtp_password"}   # may be empty for a relay that needs no login

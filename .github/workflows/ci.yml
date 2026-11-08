@@ -1,0 +1,260 @@
+# Pull request validation. Runs on every PR and on pushes to main. It builds and tests; it never deploys, pushes an
+# image or uses a secret. The only credential in play is the read-only GITHUB_TOKEN that Actions provides.
+#
+# Security properties of this file:
+#   * `pull_request` (not `pull_request_target`): code from a fork runs without access to repository secrets.
+#   * Default token is read-only; no job asks for more.
+#   * Service passwords below are throwaway values for containers that exist for the length of the job.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.9.7"          # same uv as the Dockerfile, so the lockfile is resolved the same way everywhere
+  NODE_VERSION: "22.22.0"
+  WORKER_IMAGE: atlas-ai-test-runner:py3.12.13-pytest9.2.0
+
+jobs:
+  lint:
+    name: Ruff (lint and security rules)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@v5
+        with: {version: "${{ env.UV_VERSION }}", enable-cache: true}
+      - uses: actions/setup-python@v5
+        with: {python-version-file: .python-version}
+      - run: uv sync --locked
+      - name: Ruff (includes the flake8-bandit "S" rules configured in pyproject.toml)
+        run: uv run ruff check .
+      - name: The lockfile is current
+        run: uv lock --check
+
+  backend:
+    name: Backend tests (PostgreSQL, Neo4j, Docker workers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.0-pg16
+        env:
+          POSTGRES_USER: atlas
+          POSTGRES_PASSWORD: ci-only-throwaway-password
+          POSTGRES_DB: atlas
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U atlas -d atlas" --health-interval 5s --health-timeout 3s --health-retries 20
+      neo4j:
+        image: neo4j:5.15-community
+        env:
+          NEO4J_AUTH: neo4j/ci-only-throwaway-password
+        ports: ["7687:7687", "7474:7474"]
+        options: >-
+          --health-cmd "wget -qO- http://localhost:7474 || exit 1" --health-interval 5s --health-timeout 3s
+          --health-retries 30
+    env:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+psycopg://atlas:ci-only-throwaway-password@localhost:5432/atlas
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: ci-only-throwaway-password
+      # A skipped container test is a failure here: CI must prove the worker isolation, not skip it.
+      REQUIRE_CONTAINER: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@v5
+        with: {version: "${{ env.UV_VERSION }}", enable-cache: true}
+      - uses: actions/setup-python@v5
+        with: {python-version-file: .python-version}
+      - run: uv sync --locked
+      - name: Build the worker image (the tests start real containers from it)
+        run: docker build -f docker/test-runner.Dockerfile -t "$WORKER_IMAGE" docker
+      - name: Migrations upgrade, downgrade to base, upgrade again, and match the models
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Tests
+        # slow: starts extra Neo4j containers (nightly in security.yml's schedule would be the place). worker_host: needs a
+        # rootless VM and is deliberately opt-in (docs/security/worker-validation-plan.md).
+        run: uv run pytest -m "not slow and not worker_host" -p no:cacheprovider -q --junitxml=pytest-report.xml
+      - name: Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with: {name: pytest-report, path: pytest-report.xml, retention-days: 7}
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run: {working-directory: frontend}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: The production bundle contains no API keys or secrets
+        run: |
+          if grep -rEi 'sk-ant-|BEGIN (RSA|EC|OPENSSH) PRIVATE KEY' dist; then
+            echo "a secret-looking value is in the production bundle" >&2
+            exit 1
+          fi
+
+  e2e:
+    name: Browser tests (real frontend, real API, throwaway database)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # PostgreSQL only: the browser tests never use Neo4j, Docker workers or a model provider (their API runs with all three off).
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.0-pg16
+        env:
+          POSTGRES_USER: atlas
+          POSTGRES_PASSWORD: ci-only-throwaway-password
+          POSTGRES_DB: atlas
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U atlas -d atlas" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      # Credentials for the SERVER; the harness creates its own atlas_e2e_<random> database there, migrates it, and drops it.
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+psycopg://atlas:ci-only-throwaway-password@localhost:5432/atlas
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@v5
+        with: {version: "${{ env.UV_VERSION }}", enable-cache: true}
+      - uses: actions/setup-python@v5
+        with: {python-version-file: .python-version}
+      - run: uv sync --locked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install the frontend and a browser
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Browser tests
+        working-directory: frontend
+        run: npx playwright test
+      - name: Report and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7
+
+  docker:
+    name: Docker builds and deployment-file checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: docker/setup-buildx-action@v3
+      - name: Dockerfile lint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          config: .hadolint.yaml
+          failure-threshold: warning
+      - name: Dockerfile lint (frontend)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: frontend/Dockerfile
+          config: .hadolint.yaml
+          failure-threshold: warning
+      - name: Dockerfile lint (worker)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/test-runner.Dockerfile
+          config: .hadolint.yaml
+          failure-threshold: warning
+      - name: Build the API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: atlas-ai-api:ci
+          build-args: |
+            VERSION=ci
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build the backup image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: backup
+          load: true
+          push: false
+          tags: atlas-ai-backup:ci
+          build-args: |
+            VERSION=ci
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=api
+      - name: Build the frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          load: true
+          push: false
+          tags: atlas-ai-frontend:ci
+          build-args: VERSION=ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+      - name: The API image runs as a non-root user, has its tools, and no secrets or tests
+        run: |
+          test "$(docker run --rm --entrypoint id atlas-ai-api:ci -u)" = "10001"
+          docker run --rm -e EXPECTED_REVISION --entrypoint sh atlas-ai-api:ci -c '
+            set -e
+            alembic --help >/dev/null
+            uvicorn --version
+            ruff --version
+            git --version
+            docker --version
+            test ! -e /app/tests && test ! -e /app/.env && test ! -e /app/docs
+            test "$(stat -c %a /var/lib/atlas/backups)" = 700
+            test "$ATLAS_REVISION" = "$EXPECTED_REVISION"'
+        env:
+          EXPECTED_REVISION: ${{ github.sha }}
+      - name: The backup image has PostgreSQL 16 client tools
+        run: docker run --rm --entrypoint pg_dump atlas-ai-backup:ci --version | grep -q "(PostgreSQL) 16"
+      - name: The production compose file is valid (placeholder values only)
+        run: |
+          mkdir -p ci-secrets
+          for f in database_url auth_secret_key neo4j_password postgres_password backup_encryption_key anthropic_api_key metrics_token; do
+            echo placeholder > "ci-secrets/$f"
+          done
+          SECRETS_DIR=ci-secrets REGISTRY=registry.invalid ATLAS_VERSION=ci \
+            WORKSPACE_HOST_DIR=/var/lib/atlas/workspaces REPOSITORIES_DIR=/srv/repositories \
+            docker compose -f docker-compose.prod.yml config -q
+          docker compose -f docker-compose.yml config -q

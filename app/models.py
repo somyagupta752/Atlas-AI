@@ -262,4 +262,5 @@ class PatchVerificationRecord(Base):
 
 
 # Registers the evaluation tables on Base.metadata (Alembic and the schema-match test read it).
+from app.auth import models as _auth_models  # noqa: F401
 from app.evaluation import models as _evaluation_models  # noqa: F401

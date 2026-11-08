@@ -15,6 +15,8 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.auth.access import current_user, visible_to
+from app.auth.models import User
 from app.config import Settings, get_settings
 from app.database import SessionLocal, get_db
 from app.evaluation.comparisons import RunInput, compare
@@ -60,7 +62,7 @@ from app.evaluation.service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/evaluations", tags=["evaluation"])
+router = APIRouter(prefix="/evaluations", tags=["evaluation"], dependencies=[Depends(current_user)])
 
 MAX_PAGE_SIZE = 100
 MAX_OFFSET = 1_000_000
@@ -118,9 +120,10 @@ def create_configuration(
     spec: ConfigurationSpec,
     db: Session = Depends(get_db),
     repository: ConfigurationRepository = Depends(get_configuration_repository),
+    user: User = Depends(current_user),
 ) -> ConfigurationOut:
     try:
-        row = repository.create(spec)
+        row = repository.create(spec, owner_id=user.id)
         _commit(db)
     except ConfigurationConflictError as exc:
         db.rollback()
@@ -136,8 +139,9 @@ def list_configurations(
     offset: int = Query(default=0, ge=0, le=MAX_OFFSET),
     name: str | None = Query(default=None, max_length=200),
     repository: ConfigurationRepository = Depends(get_configuration_repository),
+    user: User = Depends(current_user),
 ) -> ConfigurationListOut:
-    rows, total = repository.list_all(limit=limit, offset=offset, name=name)
+    rows, total = repository.list_all(limit=limit, offset=offset, name=name, viewer=user)
     counts = repository.run_counts([r.id for r in rows])
     return ConfigurationListOut(items=[configuration_out(r, counts.get(r.id, 0)) for r in rows],
                                 page=Page(limit=limit, offset=offset, total=total))
@@ -145,10 +149,11 @@ def list_configurations(
 
 @router.get("/configurations/{configuration_id}", response_model=ConfigurationOut)
 def get_configuration(
-    configuration_id: uuid.UUID, repository: ConfigurationRepository = Depends(get_configuration_repository)
+    configuration_id: uuid.UUID, repository: ConfigurationRepository = Depends(get_configuration_repository),
+    user: User = Depends(current_user),
 ) -> ConfigurationOut:
     try:
-        row = repository.get(configuration_id)
+        row = repository.get(configuration_id, viewer=user)
     except ConfigurationNotFoundError:
         raise HTTPException(404, "Configuration not found") from None
     return configuration_out(row, repository.run_counts([row.id]).get(row.id, 0))
@@ -160,9 +165,10 @@ def clone_configuration(
     body: CloneRequest,
     db: Session = Depends(get_db),
     repository: ConfigurationRepository = Depends(get_configuration_repository),
+    user: User = Depends(current_user),
 ) -> ConfigurationOut:
     try:
-        row = repository.clone(configuration_id, body.overrides, body.name)
+        row = repository.clone(configuration_id, body.overrides, body.name, owner=user)
         _commit(db)
     except ConfigurationNotFoundError:
         raise HTTPException(404, "Configuration not found") from None
@@ -201,6 +207,13 @@ def get_runner_factory():
 
 def get_run_repository(db: Session = Depends(get_db)) -> RunRepository:
     return RunRepository(db)
+
+
+def visible_run(run_id: uuid.UUID, user: User = Depends(current_user), db: Session = Depends(get_db)) -> None:
+    """404 for a run that is missing or belongs to someone else: its existence is not revealed."""
+    run = db.get(EvaluationRun, run_id)
+    if run is None or not visible_to(run.owner_id, user):
+        raise HTTPException(404, "Evaluation not found")
 
 
 def _money(value) -> str | None:
@@ -246,11 +259,12 @@ def start_run(
     dispatcher: RunDispatcher = Depends(get_dispatcher),
     session_factory=Depends(get_session_factory),
     runner_factory=Depends(get_runner_factory),
+    user: User = Depends(current_user),
 ) -> RunOut:
     """Validate, record and start an evaluation in the background. Poll GET /evaluations/{id}."""
     service = EvaluationService(db, settings, session_factory, dispatcher, runner_factory=runner_factory)
     try:
-        run, _created = service.start(body)
+        run, _created = service.start(body, user)
     except ConfigurationNotFoundError:
         raise HTTPException(404, "Configuration not found") from None
     except RunRequestError as exc:
@@ -261,18 +275,24 @@ def start_run(
         raise HTTPException(SETUP_STATUS.get(exc.kind, 503), str(exc)) from None
     except RunConflictError as exc:
         db.rollback()
-        raise HTTPException(409, {"message": str(exc), "existing_run_id": str(exc.existing_run_id)}) from None
+        detail = {"message": str(exc)}
+        if exc.existing_run_id is not None and exc.existing_run_owned_by_caller:
+            detail["existing_run_id"] = str(exc.existing_run_id)
+        raise HTTPException(409, detail) from None
     return run_out(run, RunRepository(db).case_counts([run.id]).get(run.id))
 
 
 @router.post("/compare")
-def compare_runs(body: CompareRequest, repo: RunRepository = Depends(get_run_repository)) -> dict:
+def compare_runs(body: CompareRequest, repo: RunRepository = Depends(get_run_repository),
+                 user: User = Depends(current_user)) -> dict:
     ids = list(dict.fromkeys(body.evaluation_run_ids))
     if len(ids) < 2:
         raise HTTPException(422, "Compare at least two different evaluations")
     inputs = []
     for run_id in ids:
         run = _run_or_404(repo, run_id)
+        if not visible_to(run.owner_id, user):
+            raise HTTPException(404, "Evaluation not found")
         if run.status in ("pending", "running"):
             raise HTTPException(409, f"Evaluation {run_id} is still running")
         inputs.append(RunInput(str(run.id), run.name, run.status, run.benchmark_version, run.evaluation_mode,
@@ -288,21 +308,22 @@ def list_runs(
     mode: str | None = Query(default=None, max_length=20),
     configuration_id: uuid.UUID | None = None,
     repo: RunRepository = Depends(get_run_repository),
+    user: User = Depends(current_user),
 ) -> RunListOut:
     rows, total = repo.list_runs(limit=limit, offset=offset, status=status, mode=mode,
-                                 configuration_id=configuration_id)
+                                 configuration_id=configuration_id, viewer=user)
     counts = repo.case_counts([r.id for r in rows])
     return RunListOut(items=[run_out(r, counts.get(r.id)) for r in rows],
                       page=Page(limit=limit, offset=offset, total=total))
 
 
-@router.get("/{run_id}", response_model=RunOut)
+@router.get("/{run_id}", response_model=RunOut, dependencies=[Depends(visible_run)])
 def get_run(run_id: uuid.UUID, repo: RunRepository = Depends(get_run_repository)) -> RunOut:
     run = _run_or_404(repo, run_id)
     return run_out(run, repo.case_counts([run.id]).get(run.id))
 
 
-@router.get("/{run_id}/cases", response_model=CaseListOut)
+@router.get("/{run_id}/cases", response_model=CaseListOut, dependencies=[Depends(visible_run)])
 def list_cases(
     run_id: uuid.UUID,
     limit: int = Query(default=50, ge=1, le=MAX_PAGE_SIZE),
@@ -316,7 +337,7 @@ def list_cases(
     return CaseListOut(items=[case_out(c) for c in rows], page=Page(limit=limit, offset=offset, total=total))
 
 
-@router.get("/{run_id}/cases/{case_id}", response_model=CaseDetailOut)
+@router.get("/{run_id}/cases/{case_id}", response_model=CaseDetailOut, dependencies=[Depends(visible_run)])
 def get_case(
     run_id: uuid.UUID, case_id: str,
     variant: str | None = Query(default=None, max_length=100),
@@ -333,7 +354,7 @@ def get_case(
                          other_variants=[v for v in variants if v != row.variant])
 
 
-@router.get("/{run_id}/metrics", response_model=MetricsOut)
+@router.get("/{run_id}/metrics", response_model=MetricsOut, dependencies=[Depends(visible_run)])
 def get_metrics(run_id: uuid.UUID, repo: RunRepository = Depends(get_run_repository)) -> MetricsOut:
     run = _run_or_404(repo, run_id)
     calculation = repo.latest_calculation(run_id)
@@ -357,7 +378,7 @@ def get_metrics(run_id: uuid.UUID, repo: RunRepository = Depends(get_run_reposit
         by_category=by_category)
 
 
-@router.post("/{run_id}/recalculate", response_model=MetricsOut)
+@router.post("/{run_id}/recalculate", response_model=MetricsOut, dependencies=[Depends(visible_run)])
 def recalculate(run_id: uuid.UUID, db: Session = Depends(get_db),
                 repo: RunRepository = Depends(get_run_repository)) -> MetricsOut:
     run = _run_or_404(repo, run_id)
@@ -368,7 +389,7 @@ def recalculate(run_id: uuid.UUID, db: Session = Depends(get_db),
     return get_metrics(run_id, repo)
 
 
-@router.post("/{run_id}/cancel", status_code=202, response_model=RunOut)
+@router.post("/{run_id}/cancel", status_code=202, response_model=RunOut, dependencies=[Depends(visible_run)])
 def cancel_run(run_id: uuid.UUID, repo: RunRepository = Depends(get_run_repository),
                dispatcher: RunDispatcher = Depends(get_dispatcher)) -> RunOut:
     run = _run_or_404(repo, run_id)

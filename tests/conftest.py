@@ -107,3 +107,69 @@ def make_context():
         return ToolContext(repository_id=repository_id, repository_root=root, **kwargs)
 
     return make
+
+
+@pytest.fixture(autouse=True)
+def _operator_by_default(request):
+    """Most tests exercise behaviour, not access control: they run as an operator.
+
+    Tests that check authentication or authorization are marked ``real_auth`` and get no override.
+    """
+    if request.node.get_closest_marker("real_auth"):
+        yield
+        return
+    from fastapi import Depends
+
+    from app.auth.access import current_user
+    from app.auth.models import User
+    from app.database import get_db
+    from app.main import app
+
+    def operator(db=Depends(get_db)) -> User:
+        # A real row, so records that reference their owner satisfy the foreign key. Rolled back with the test.
+        user = db.query(User).filter(User.email == "operator@test.invalid").first()
+        if user is None:
+            user = User(email="operator@test.invalid", hashed_password="x", is_active=True, is_admin=True)
+            db.add(user)
+            db.flush()
+        return user
+
+    app.dependency_overrides[current_user] = operator
+    yield
+    app.dependency_overrides.pop(current_user, None)
+
+
+@pytest.fixture
+def json_logs():
+    """Capture every log record as the parsed JSON a deployment would print."""
+    import json
+    import logging
+
+    from app.core.logging import JsonFormatter
+
+    lines: list[str] = []
+
+    class Capture(logging.Handler):
+        def emit(self, record):
+            lines.append(JsonFormatter().format(record))
+
+    handler = Capture(level=logging.DEBUG)
+    root = logging.getLogger()
+    previous = root.level
+    root.addHandler(handler)
+    root.setLevel(logging.DEBUG)
+    for noisy in ("httpx", "httpx2", "httpcore", "asyncio"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)  # the test client's own chatter, as in production
+
+    class Reader:
+        def events(self, name=None):
+            parsed = [json.loads(line) for line in lines]
+            return [e for e in parsed if name is None or e["event"] == name]
+
+        @property
+        def raw(self):
+            return "\n".join(lines)
+
+    yield Reader()
+    root.removeHandler(handler)
+    root.setLevel(previous)

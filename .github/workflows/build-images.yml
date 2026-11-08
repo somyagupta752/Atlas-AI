@@ -1,0 +1,89 @@
+# Build the release images by hand. This is NOT a deployment: it never touches a server, and it needs no deployment
+# secret. By default it only builds and scans. With `push` enabled it publishes versioned images to the repository's own
+# GitHub Container Registry using the workflow's GITHUB_TOKEN, and nothing else happens.
+#
+# Deploying those images stays a manual step, from a person, with a person's credentials: docs/deployment.md.
+name: Build release images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image tag, for example 1.4.0 (letters, digits, dots and hyphens). Never 'latest'."
+        required: true
+        type: string
+      push:
+        description: "Publish to ghcr.io after a clean scan"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-images
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  TRIVY_IMAGE: aquasec/trivy:0.58.1
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write          # used only when `push` is true
+    env:
+      # Passed through the environment, never pasted into a script: a workflow input is untrusted text.
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Check the version
+        run: |
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9A-Za-z][0-9A-Za-z._-]{0,40}$' || [ "$VERSION" = latest ]; then
+            echo "version must be a specific tag, not 'latest'" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: docker/setup-buildx-action@v3
+      - name: Image name prefix (lower case, as the registry requires)
+        run: echo "PREFIX=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Build all three images locally first
+        run: |
+          rev="$GITHUB_SHA"
+          docker buildx build --load --no-cache -t "$PREFIX/atlas-ai-api:$VERSION" \
+            --build-arg VERSION="$VERSION" --build-arg REVISION="$rev" .
+          docker buildx build --load -t "$PREFIX/atlas-ai-backup:$VERSION" --target backup \
+            --build-arg VERSION="$VERSION" --build-arg REVISION="$rev" .
+          docker buildx build --load --no-cache -t "$PREFIX/atlas-ai-frontend:$VERSION" \
+            --build-arg VERSION="$VERSION" frontend
+      - name: Scan before publishing (a fixable HIGH or CRITICAL vulnerability stops the release)
+        run: |
+          for image in api backup frontend; do
+            docker save "$PREFIX/atlas-ai-$image:$VERSION" -o "$image.tar"
+            docker run --rm -v "$PWD":/work "$TRIVY_IMAGE" image --input "/work/$image.tar" \
+              --severity HIGH,CRITICAL --ignore-unfixed --scanners vuln --exit-code 1 --ignorefile /work/.trivyignore
+          done
+      - name: Log in to the registry
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish
+        if: ${{ inputs.push }}
+        run: |
+          for image in api backup frontend; do
+            docker push "$PREFIX/atlas-ai-$image:$VERSION"
+          done
+          {
+            echo "### Published"
+            for image in api backup frontend; do
+              echo "- \`$PREFIX/atlas-ai-$image:$VERSION\` $(docker image inspect --format '{{index .RepoDigests 0}}' \
+                "$PREFIX/atlas-ai-$image:$VERSION" 2>/dev/null)"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

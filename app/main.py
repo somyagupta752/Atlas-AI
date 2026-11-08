@@ -13,6 +13,14 @@ from app.agents.llm import LLMConfigurationError, create_llm_provider
 from app.agents.routes import limit_debug_request_size
 from app.agents.routes import router as debugging_router
 from app.agents.tool_registry import create_default_registry
+from app.auth.access import (
+    authorize_repository,
+    current_user,
+    membership_role,
+    repository_access,
+)
+from app.auth.models import ROLE_RANK, Role, User
+from app.auth.routes import router as auth_router
 from app.benchmark import BenchmarkExecutionResult, run_benchmark
 from app.benchmark_registry import get_benchmark
 from app.code_intelligence import (
@@ -22,6 +30,8 @@ from app.code_intelligence import (
 )
 from app.code_intelligence.schemas import RepositoryAnalysis
 from app.config import get_settings
+from app.core.logging import configure_logging, register_secret_values
+from app.core.middleware import RequestContextMiddleware
 from app.database import get_db
 from app.dependencies import (
     get_allowed_repository_roots,
@@ -90,6 +100,26 @@ BENCHMARK_TIMEOUT_SECONDS = 10
 
 
 
+def _cleanup_workers(settings, when: str) -> None:
+    """Remove this deployment's leftover worker containers and workspaces. Never blocks or fails startup."""
+    try:
+        if settings.patch_test_backend == "container":
+            from app.patching.container import cleanup_orphans
+
+            report = cleanup_orphans(settings.instance_id)
+            if report["removed"] or report["failed"]:
+                logger.warning("worker cleanup at %s: removed=%d failed=%s", when, len(report["removed"]),
+                               report["failed"])
+        if when == "startup":
+            from app.patching.workspace import WorkspaceManager
+
+            removed = WorkspaceManager(settings.patch_workspace_dir).purge_all_inactive()
+            if removed:
+                logger.warning("removed %d abandoned workspace(s) at startup", removed)
+    except Exception:
+        logger.exception("worker cleanup at %s failed", when)
+
+
 def _recover_evaluation_runs() -> None:
     """Close evaluations a previous process left active. Never blocks startup."""
     from datetime import UTC, datetime
@@ -110,9 +140,18 @@ def _recover_evaluation_runs() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Create the Neo4j driver and the embedding provider once per process."""
+    settings = get_settings()
+    configure_logging(json_logs=settings.log_format == "json" or (settings.log_format == "auto" and
+                                                                  settings.is_deployed),
+                      level=settings.log_level)
+    register_secret_values(
+        *(v.get_secret_value() for v in (settings.anthropic_api_key, settings.auth_secret_key, settings.neo4j_password,
+                                         settings.embedding_api_key, settings.metrics_token, settings.database_url)
+          if v is not None))
+    logger.info("starting", extra={"event": "startup", **settings.public_summary()})
     _recover_evaluation_runs()
     app.state.graph_repository = None
-    settings = get_settings()
+    _cleanup_workers(settings, "startup")
     app.state.embedding_provider = None
     app.state.tool_registry = create_default_registry()
     app.state.llm_provider = None
@@ -142,6 +181,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        # Graceful shutdown: stop active evaluations between cases, then remove any worker still running.
+        try:
+            from app.evaluation.routes import get_dispatcher
+
+            get_dispatcher().cancel_all(wait_seconds=10)
+        except Exception:
+            logger.exception("could not cancel active evaluations")
+        _cleanup_workers(settings, "shutdown")
         if driver is not None:
             driver.close()
         close = getattr(app.state.embedding_provider, "close", None)
@@ -149,8 +196,35 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             close()
 
 
-app = FastAPI(title="Atlas AI", lifespan=lifespan)
+_docs = get_settings().api_docs_enabled
+app = FastAPI(title="Atlas AI", lifespan=lifespan, docs_url="/docs" if _docs else None,
+              redoc_url="/redoc" if _docs else None, openapi_url="/openapi.json" if _docs else None)
 app.middleware("http")(limit_debug_request_size)
+app.add_middleware(RequestContextMiddleware)  # outermost: every request, even a rejected one, gets an ID
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Defence in depth for the API and the docs pages: no sniffing, no framing, no referrer leaks."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    if request.url.path.startswith(("/evaluations", "/debug", "/repositories")):
+        response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
+_settings = get_settings()
+if _settings.cors_allowed_origins:
+    from fastapi.middleware.cors import CORSMiddleware
+
+    # Only the approved frontend origins; credentials are needed for the httpOnly refresh cookie.
+    app.add_middleware(
+        CORSMiddleware, allow_origins=_settings.cors_allowed_origins, allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE"], allow_headers=["Authorization", "Content-Type"],
+        max_age=600)
+app.include_router(auth_router)
 app.include_router(debugging_router)
 app.include_router(patching_router)
 app.include_router(baselines_router)
@@ -167,13 +241,48 @@ def graph_store_unavailable(request: Request, exc: GraphStoreError) -> JSONRespo
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Liveness: the process answers. Dependencies are checked by /ready."""
     return {"status": "healthy"}
+
+
+@app.get("/ready")
+def ready(request: Request) -> JSONResponse:
+    """Readiness: database, graph store and worker backend. Fixed words only, no hosts or error text."""
+    from app.core.observability import readiness
+    from app.database import SessionLocal
+
+    ok, checks = readiness(get_settings(), request.app.state, SessionLocal)
+    return JSONResponse(status_code=200 if ok else 503, content={"status": "ready" if ok else "not_ready",
+                                                                  "checks": checks})
+
+
+def metrics_access(request: Request) -> None:
+    """Prometheus scrapes with ``Authorization: Bearer <METRICS_TOKEN>``. Without a configured token: 404."""
+    import hmac
+
+    token = get_settings().metrics_token
+    given = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    if token is None or not given or not hmac.compare_digest(given, token.get_secret_value()):
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+@app.get("/metrics", dependencies=[Depends(metrics_access)], include_in_schema=False)
+def prometheus_metrics() -> Response:
+    from app.core import metrics
+
+    return Response(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
 @app.post("/benchmarks/run")
 def run_benchmark_endpoint(
-    request: RunBenchmarkRequest, db: Session = Depends(get_db)
+    request: RunBenchmarkRequest, db: Session = Depends(get_db), user: User = Depends(current_user)
 ) -> BenchmarkExecutionResult:
+    # Runs pytest on the host (a committed benchmark only). Operators enable it; it is never on in production.
+    settings = get_settings()
+    if not settings.benchmarks_endpoint_enabled or settings.environment == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Only an operator may run host benchmarks")
     case = get_benchmark(request.case_id)
     if case is None:
         raise HTTPException(status_code=404, detail=f"Unknown benchmark: {request.case_id}")
@@ -187,6 +296,7 @@ def list_benchmark_runs(
     case_id: str,
     limit: int = Query(default=50, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User = Depends(current_user),
 ) -> list[BenchmarkExecutionRecord]:
     if get_benchmark(case_id) is None:
         raise HTTPException(status_code=404, detail=f"Unknown benchmark: {case_id}")
@@ -207,6 +317,7 @@ def is_within_allowed_roots(target: Path, allowed_roots: list[Path]) -> bool:
 def analyze_repository_endpoint(
     request: AnalyzeRepositoryRequest,
     allowed_roots: list[Path] = Depends(get_allowed_repository_roots),
+    user: User = Depends(current_user),
 ) -> RepositoryAnalysis:
     target = authorize_repository_path(request.repository_path, allowed_roots)
     try:
@@ -236,6 +347,7 @@ def authorize_repository_path(repository_path: str, allowed_roots: list[Path]) -
 # --- code knowledge graph ---------------------------------------------------
 
 RepositoryIdParam = Annotated[str, PathParam(pattern=REPOSITORY_ID_PATTERN)]
+viewer_access = repository_access(Role.VIEWER)  # one dependency object, reused where the repository itself is needed
 
 
 def get_graph_repository(request: Request) -> GraphRepository:
@@ -257,8 +369,11 @@ def build_repository_graph(
     request: BuildGraphRequest,
     allowed_roots: list[Path] = Depends(get_allowed_repository_roots),
     service: GraphService = Depends(get_graph_service),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
 ) -> GraphBuildResult:
     target = authorize_repository_path(request.repository_path, allowed_roots)
+    authorize_repository(db, user, request.repository_id, Role.EDITOR, create=True)
     try:
         return service.build_graph(target, request.repository_id)
     except RepositoryNotFoundError as exc:
@@ -275,7 +390,7 @@ def build_repository_graph(
         ) from exc
 
 
-@app.get("/repositories/{repository_id}/graph")
+@app.get("/repositories/{repository_id}/graph", dependencies=[Depends(repository_access(Role.VIEWER))])
 def get_repository_graph(
     repository_id: RepositoryIdParam, service: GraphService = Depends(get_graph_service)
 ) -> CodeGraph:
@@ -285,7 +400,7 @@ def get_repository_graph(
         raise HTTPException(status_code=404, detail=f"No graph for {repository_id}") from exc
 
 
-@app.get("/repositories/{repository_id}/graph/stats")
+@app.get("/repositories/{repository_id}/graph/stats", dependencies=[Depends(repository_access(Role.VIEWER))])
 def get_repository_graph_stats(
     repository_id: RepositoryIdParam, service: GraphService = Depends(get_graph_service)
 ) -> GraphStats:
@@ -295,7 +410,8 @@ def get_repository_graph_stats(
         raise HTTPException(status_code=404, detail=f"No graph for {repository_id}") from exc
 
 
-@app.delete("/repositories/{repository_id}/graph", status_code=204)
+@app.delete("/repositories/{repository_id}/graph", status_code=204,
+            dependencies=[Depends(repository_access(Role.OWNER))])
 def delete_repository_graph(
     repository_id: RepositoryIdParam, service: GraphService = Depends(get_graph_service)
 ) -> Response:
@@ -338,8 +454,11 @@ def index_repository_endpoint(
     request: IndexRepositoryRequest,
     allowed_roots: list[Path] = Depends(get_allowed_repository_roots),
     indexer: RepositoryIndexer = Depends(get_repository_indexer),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
 ) -> IndexResult:
     target = authorize_repository_path(request.repository_path, allowed_roots)
+    authorize_repository(db, user, repository_id, Role.EDITOR, create=True)
     try:
         return indexer.index_repository(repository_id, target)
     except RepositoryNotFoundError as exc:
@@ -358,22 +477,30 @@ def index_repository_endpoint(
 
 @app.get("/repositories/{repository_id}/index/status")
 def get_index_status(
-    repository_id: RepositoryIdParam, db: Session = Depends(get_db)
+    repository_id: RepositoryIdParam,
+    repository=Depends(viewer_access),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
 ) -> IndexState:
     state = ChunkRepository(db).get_index_state(repository_id)
     if state is None:
         raise HTTPException(status_code=404, detail=f"No index for {repository_id}")
+    role = membership_role(db, user, repository)
+    if not user.is_admin and (role is None or ROLE_RANK[role] < ROLE_RANK[Role.EDITOR]):
+        # A viewer reads code and results; the server's directory layout is not theirs to know.
+        state = state.model_copy(update={"root_path": ""})
     return state
 
 
-@app.delete("/repositories/{repository_id}/index", status_code=204)
+@app.delete("/repositories/{repository_id}/index", status_code=204,
+            dependencies=[Depends(repository_access(Role.OWNER))])
 def delete_index(repository_id: RepositoryIdParam, db: Session = Depends(get_db)) -> Response:
     if not ChunkRepository(db).delete_index(repository_id):
         raise HTTPException(status_code=404, detail=f"No index for {repository_id}")
     return Response(status_code=204)
 
 
-@app.post("/repositories/{repository_id}/search")
+@app.post("/repositories/{repository_id}/search", dependencies=[Depends(repository_access(Role.VIEWER))])
 def search_repository(
     repository_id: RepositoryIdParam,
     request: SearchRepositoryRequest,

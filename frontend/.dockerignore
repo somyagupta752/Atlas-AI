@@ -1,0 +1,12 @@
+# The frontend image is built from this directory only; keep installed modules and local env files out.
+node_modules
+dist
+.env
+.env.*
+*.pem
+*.key
+e2e
+playwright.config.ts
+test-results
+playwright-report
+blob-report

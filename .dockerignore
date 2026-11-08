@@ -1,0 +1,26 @@
+# Keep secrets, history, caches and development material out of every build context.
+.git
+.github
+.venv
+.env
+.env.*
+!.env.example
+deploy.env
+deploy.env.*
+!deploy.env.example
+secrets
+backups
+*.pem
+*.key
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+node_modules
+frontend
+tests
+docs
+scripts
+docker
+# Results of past runs are history, not input. The benchmark definitions next to them ARE needed and are kept.
+benchmarks/patching/results

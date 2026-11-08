@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
 
 
-engine = create_engine(get_settings().database_url, pool_pre_ping=True)
+engine = create_engine(get_settings().database_url.get_secret_value(), pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 

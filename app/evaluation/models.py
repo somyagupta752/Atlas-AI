@@ -126,6 +126,10 @@ class EvaluationConfiguration(Base):
     retrieval_strategy: Mapped[str] = mapped_column(String(50))
     test_visibility: Mapped[str] = mapped_column(String(50))
     test_backend: Mapped[str] = mapped_column(String(50))
+    # The user who created this record. NULL: a system record (historical import), readable by every user.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = _created_at()
 
     runs: Mapped[list["EvaluationRun"]] = relationship(back_populates="configuration")
@@ -178,6 +182,10 @@ class EvaluationRun(Base):
     source_filename: Mapped[str | None] = mapped_column(String(300), nullable=True)
     source_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The user who created this record. NULL: a system record (historical import), readable by every user.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = _created_at()
 
     configuration: Mapped[EvaluationConfiguration | None] = relationship(back_populates="runs")
@@ -395,4 +403,8 @@ class EvaluationBaseline(Base):
     configuration_snapshot: Mapped[dict] = mapped_column(JSONB)
     baseline_metrics: Mapped[list] = mapped_column(JSONB)
     note: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    # The user who created this record. NULL: a system record (historical import), readable by every user.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = _created_at()

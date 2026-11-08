@@ -396,3 +396,22 @@ def test_repository_refuses_invalid_transitions(stored):
     with pytest.raises(InvalidPatchTransitionError):
         patches.transition(proposal.patch_id, PatchStatus.APPLIED)
     assert patches.get_proposal(proposal.patch_id).status == "validation_failed"
+
+
+def test_patch_verification_is_logged_with_the_workflow_id_and_counted(build_service, json_logs):
+    from app.core import metrics
+    from tests.patching.conftest import AVERAGE_FIX, submit
+
+    def count(status):
+        return metrics.REGISTRY.get_sample_value("atlas_patch_executions_total", {"status": status}) or 0
+
+    before = count("verified")
+    service, _llm, investigation_id = build_service([submit(AVERAGE_FIX)])
+    execution = service.generate_and_verify_patch(investigation_id)
+    assert execution.status == "verified" and count("verified") == before + 1
+    event = json_logs.events("patch_verification_completed")[-1]
+    assert event["workflow_id"] == investigation_id and event["outcome"] == "verified"
+    assert event["attempts"] == 1 and event["execution_id"] == execution.execution_id
+    runs = json_logs.events("test_run_completed")
+    assert runs and all(r["workflow_id"] == investigation_id for r in runs)
+    assert "def calculate_average" not in json_logs.raw  # source code is never logged

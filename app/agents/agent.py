@@ -12,6 +12,7 @@ No HTTP here: the same service runs from FastAPI, scripts or a future worker.
 """
 
 import logging
+import time
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any, Protocol
@@ -27,6 +28,9 @@ from app.agents.schemas import MAX_BUG_REPORT_LENGTH, AgentLimits, RootCauseAnal
 from app.agents.state import InvestigationState
 from app.agents.tool_executor import ToolExecutor
 from app.agents.tool_registry import ToolRegistry
+from app.core import metrics
+from app.core.logging import log_event
+from app.core.observability import workflow_scope
 from app.knowledge_graph.models import is_valid_repository_id
 from app.tools.base import RetrievalPort, ToolContext
 
@@ -167,9 +171,16 @@ class DebuggingAgent:
         root = self._resolver.resolve(repository_id)
 
         state = InvestigationState(repository_id=repository_id, bug_report=bug_report)
+        with workflow_scope(state.investigation_id):
+            return self._investigate(state, root, repository_id, cancellation)
+
+    def _investigate(self, state: InvestigationState, root: Path, repository_id: str,
+                     cancellation: CancellationToken | None) -> RootCauseAnalysis:
+        started = time.perf_counter()
+        log_event(logger, "agent_workflow_started", repository_id=repository_id)
         state.messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": initial_user_message(repository_id, bug_report)},
+            {"role": "user", "content": initial_user_message(repository_id, state.bug_report)},
         ]
         executor = ToolExecutor(self._registry, self._allowed_tools)
         events = self._start(state, executor)
@@ -201,6 +212,11 @@ class DebuggingAgent:
         )
         if self._repository is not None:
             self._repository.finish(result)
+        elapsed = time.perf_counter() - started
+        metrics.WORKFLOW_DURATION.labels(result.status).observe(elapsed)
+        log_event(logger, "agent_workflow_completed", repository_id=repository_id, status=result.status,
+                  stop_reason=result.stop_reason, failure_reason=result.failure_reason,
+                  duration_ms=round(elapsed * 1000, 1))
         return result
 
     def _start(self, state: InvestigationState, executor: ToolExecutor) -> EventSink:

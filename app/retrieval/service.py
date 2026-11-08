@@ -17,8 +17,10 @@ others still return results.
 """
 
 import logging
+import time
 from collections.abc import Collection
 
+from app.core import metrics
 from app.knowledge_graph.models import is_valid_repository_id
 from app.knowledge_graph.repository import GraphStoreError
 from app.retrieval.embeddings import EmbeddingError
@@ -80,6 +82,18 @@ class RetrievalService:
         limit: int = 10,
         strategies: Collection[RetrievalSource] = ALL_STRATEGIES,
     ) -> RetrievalResponse:
+        started = time.perf_counter()
+        outcome = "ok"
+        try:
+            return self._retrieve_code(repository_id, query, limit, strategies)
+        except Exception:
+            outcome = "error"
+            raise
+        finally:
+            metrics.RETRIEVAL_LATENCY.labels(outcome).observe(time.perf_counter() - started)
+
+    def _retrieve_code(self, repository_id: str, query: str, limit: int,
+                       strategies: Collection[RetrievalSource]) -> RetrievalResponse:
         query = _validate(repository_id, query, limit)
         state = self._chunks.get_index_state(repository_id)
         if state is None or not state.is_searchable:
